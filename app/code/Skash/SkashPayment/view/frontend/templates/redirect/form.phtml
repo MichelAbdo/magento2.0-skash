@@ -8,6 +8,14 @@
  * @var \Magento\Paypal\Block\Payflow\Link\Iframe $block
  * @see \Magento\Paypal\Block\Payflow\Link\Iframe
  */
+
+
+// var_dump($block->getTransactionUrl());
+// echo "--------- <br/>";
+// var_dump($block->escapeUrl($block->getTransactionUrl()));
+// echo "--------- <br/>";
+// print_r(json_encode($block->requestFields()));
+// die('here');
 ?>
 <html>
 	<head>
@@ -20,7 +28,7 @@
 			<?php endforeach;?>
 		</form>
 		<script>
-		    document.getElementById('skash_form').submit();
+		    // document.getElementById('skash_form').submit();
 		</script>
 	</body>
 </html>

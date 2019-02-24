@@ -2,6 +2,8 @@
 /**
  * Copyright © 2015 Magento. All rights reserved.
  * See COPYING.txt for license details.
+ *
+ * https://www.classyllama.com/blog/how-to-create-payment-method-magento-2
  */
 namespace Skash\SkashPayment\Model;
 
@@ -31,9 +33,9 @@ class Skash extends \Magento\Payment\Model\Method\AbstractMethod
 	protected $_isOffline = false;
 	protected $_isGateway = true;
 	protected $_canCapture = true;
-	protected $_canCapturePartial = true;
+protected $_canCapturePartial = true;
 	protected $_canRefund = true;
-	protected $_canRefundInvoicePartial = true;
+protected $_canRefundInvoicePartial = true;
 	protected $_isInitializeNeeded = true;
 
 	protected $_order;
@@ -67,7 +69,8 @@ class Skash extends \Magento\Payment\Model\Method\AbstractMethod
 		$this->_orderFactory = $orderFactory;
 		$this->_encryptor = $encryptor;
 		$this->_urlBuilder = $urlBuilder;
-		parent::__construct($context,
+		parent::__construct(
+			$context,
 			$registry,
 			$extensionFactory,
 			$customAttributeFactory,
@@ -76,37 +79,71 @@ class Skash extends \Magento\Payment\Model\Method\AbstractMethod
 			$logger,
 			$resource,
 			$resourceCollection,
-			$data);
+			$data
+		);
 	}
 
 	/**
+	 * PGet form fields and prepare the data to be sent
 	 *
+	 * @param object $order
+	 *
+	 * @return array
 	 */
 	public function getFormFields($order)
 	{
-		$fieldsArr = array();
-		$shippingAddress = $order->getShippingAddress();
-		$billingAddress = $order->getBillingAddress();
+		// $fieldsArr = array();
+		// $shippingAddress = $order->getShippingAddress();
+		// $billingAddress = $order->getBillingAddress();
+		$merchantId = $this->getMerchantId();
+		$shaKey = $this->getShaKey();
+		$callbackURL = $this->getCallbackUrl();
 		$orderId = $order->getRealOrderId();
-		$orderAmount = (double)$order->getBaseGrandTotal();
+		$orderAmount = (double) $order->getBaseGrandTotal();
+		$orderCurrency = $order->getBaseCurrencyCode();
+		// $orderCreationDate = $order->getCreatedAt();
+		$orderTimestamp = strtotime($order->getCreatedAt());
+		$clientIP = $order->getRemoteIp();
+
+		// @todo: var_dump(round(microtime(true) * 1000) - strtotime("1-1-1970"););
+		$currentTimestamp = round(microtime(true) * 1000) - strtotime(date("d-m-Y"));
+
+		// TranID . MerchantIP . TS . amount . currency . callback_url_desktop . TranTS;
+		$data = $orderId . $merchantId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp;
+
+		$secureHash = base64_encode(hash('sha512', $data . $shaKey, true));
 
 		$fieldsArr = array(
-			'merchant_key' => $this->getMerchantKey(),
-			'success_url' => $this->getCallbackUrl(),
-			'cancelled_url'	=> $this->getCallbackUrl(),
-			'deferred_url' => $this->getCallbackUrl(),
-			'currency' => $order->getBaseCurrencyCode(),
-			'invoice_id' => $orderId,
-			'total'	=> $orderAmount,
-			'description' => 'Payment for Order #'.$orderId,
-			'extra_email' => $billingAddress->getEmail(),
-			'extra_name' => $billingAddress->getFirstname().' '.$billingAddress->getLastname(),
-			'extra_mobile' => $billingAddress->getTelephone()
+			'OnlineQRParams' => [
+				'TranID' => $orderId,
+				'Amount' => $orderAmount,
+				'Currency' => $orderCurrency,
+				'CallBack' => $callbackURL,
+				'SecureHash' => $secureHash,
+				'TS' => (string) $currentTimestamp,
+				'TranTS' => (string) $orderTimestamp,
+				'MerchantIP' => $merchantId,
+				'ClientIP' => $clientIP
+			]
 		);
 
 		$debugData = array(
 			'request' => $fieldsArr
 		);
+
+		// $fieldsArr = array(
+		// 	'merchant_key' => $this->getMerchantKey(),
+		// 	'success_url' => $this->getCallbackUrl(),
+		// 	'cancelled_url'	=> $this->getCallbackUrl(),
+		// 	'deferred_url' => $this->getCallbackUrl(),
+		// 	'currency' => $order->getBaseCurrencyCode(),
+		// 	'invoice_id' => $orderId,
+		// 	'total'	=> $orderAmount,
+		// 	'description' => 'Payment for Order #'.$orderId,
+		// 	'extra_email' => $billingAddress->getEmail(),
+		// 	'extra_name' => $billingAddress->getFirstname().' '.$billingAddress->getLastname(),
+		// 	'extra_mobile' => $billingAddress->getTelephone()
+		// );
 
 		return $fieldsArr;
 	}
@@ -120,13 +157,20 @@ class Skash extends \Magento\Payment\Model\Method\AbstractMethod
 	 */
 	public function getCallbackUrl()
 	{
-		return $this->_urlBuilder->getUrl('skash/checkout/response', ['_secure' => true]);
+		/* @todo: replace urls
+		Desktop: https://domain.com/request_payment_hey_pay_mobile/finalizeTransactionSkash
+		Mobile: Deeplink
+		*/
+		return $this->_urlBuilder->getUrl(
+			'skash/checkout/response',
+			['_secure' => true]
+		);
 	}
-
 
 	public function IPNResponse($incrementId)
 	{
-		$url = 'https://stage.elbarid.com/HeyPay/HeyPay/HeyPayOnlineQR?invoice_id='.$incrementId.'&merchant_key='.$this->getMerchantKey();
+		$url = 'https://stage.elbarid.com/HeyPay/HeyPay/HeyPayOnlineQR';
+		//'invoice_id='.$incrementId.'&merchant_key='.$this->getMerchantKey();
 		// @todo: change url
 		//$url = 'https://community.ipaygh.com/v1/gateway/status_chk?invoice_id='.$incrementId.'&merchant_key='.$this->getMerchantKey();
 		$ch = curl_init($url);
@@ -153,9 +197,14 @@ class Skash extends \Magento\Payment\Model\Method\AbstractMethod
 		return $result;
 	}
 
-	public function getMerchantKey()
+	public function getMerchantId()
 	{
-		return $this->_encryptor->decrypt($this->getConfigData('merchant_key'));
+		return $this->_encryptor->decrypt($this->getConfigData('merchant_id'));
+	}
+
+	public function getShaKey()
+	{
+		return $this->_encryptor->decrypt($this->getConfigData('sha_key'));
 	}
 
 	/**

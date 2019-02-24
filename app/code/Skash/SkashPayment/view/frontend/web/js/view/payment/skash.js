@@ -9,17 +9,16 @@ define(
         'uiComponent',
         'Magento_Checkout/js/model/payment/renderer-list'
     ],
-    function (
-        Component,
-        rendererList
-    ) {
+    function (Component, rendererList) {
         'use strict';
+
         rendererList.push(
             {
                 type: 'skash',
                 component: 'Skash_SkashPayment/js/view/payment/method-renderer/skash-method'
             }
         );
+
         /** Add view logic here if needed */
         return Component.extend({});
     }

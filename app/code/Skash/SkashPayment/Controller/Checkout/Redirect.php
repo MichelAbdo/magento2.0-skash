@@ -54,6 +54,7 @@ class Redirect extends \Magento\Framework\App\Action\Action
         $this->_checkoutHelper = $checkoutHelper;
         parent::__construct($context);
     }
+
 	/**
      * Submit transaction to Payflow getaway into iframe
      *
@@ -61,14 +62,20 @@ class Redirect extends \Magento\Framework\App\Action\Action
      */
     public function execute()
     {
+        // die('here');
     	if (!$this->_objectManager->get('Magento\Checkout\Model\Session\SuccessValidator')->isValid()) {
             return $this->resultRedirectFactory->create()->setPath('checkout/cart');
         }
         if($this->_checkoutSession->getLastRealOrderId()) {
-    		$order = $this->_orderFactory->create()->loadByIncrementId($this->_checkoutSession->getLastRealOrderId());
+    		$order = $this->_orderFactory->create()->loadByIncrementId(
+                $this->_checkoutSession->getLastRealOrderId()
+            );
     		if ($order->getIncrementId()) {
 				$message = __("Customer was redirected to sKash Payment Gateway.");
-				$order->addStatusHistoryComment($message, $order->getStatus())->setIsCustomerNotified(false)->save();
+				$order->addStatusHistoryComment(
+                    $message,
+                    $order->getStatus()
+                )->setIsCustomerNotified(false)->save();
 			}
     	}
     	$this->_view->loadLayout(false)->renderLayout();

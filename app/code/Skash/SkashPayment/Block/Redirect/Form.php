@@ -104,7 +104,7 @@ class Form extends \Magento\Payment\Block\Form
 
     public function requestFields()
     {
-    	$this->_order = $this-> _getOrder();
+    	$this->_order = $this->_getOrder();
     	return $this->_paymentData->getMethodInstance($this->_paymentMethodCode)->getFormFields($this->_order);
     }
 
