@@ -92,58 +92,66 @@ protected $_canRefundInvoicePartial = true;
 	 */
 	public function getFormFields($order)
 	{
-		// $fieldsArr = array();
-		// $shippingAddress = $order->getShippingAddress();
-		// $billingAddress = $order->getBillingAddress();
+		// $merchantIP = $this->getMerchantIP();
 		$merchantId = $this->getMerchantId();
-		$shaKey = $this->getShaKey();
-		$callbackURL = $this->getCallbackUrl();
-		$orderId = $order->getRealOrderId();
+		$certificate = $this->getCertificate();
+		$callbackURL = 'http://localhost.com/skash/checkout/response/';
+		// $callbackURL = $this->getCallbackUrl();
+
+		$orderId = (int) $order->getRealOrderId();
+		// $orderId = $order->getRealOrderId();
 		$orderAmount = (double) $order->getBaseGrandTotal();
+		// $orderCurrency = 'EUR';
 		$orderCurrency = $order->getBaseCurrencyCode();
-		// $orderCreationDate = $order->getCreatedAt();
 		$orderTimestamp = strtotime($order->getCreatedAt());
+		// $clientIP = '67.43.3.231';
 		$clientIP = $order->getRemoteIp();
 
-		// @todo: var_dump(round(microtime(true) * 1000) - strtotime("1-1-1970"););
-		$currentTimestamp = round(microtime(true) * 1000) - strtotime(date("d-m-Y"));
+		// $currentTimestamp = strtotime(date("Y-m-d"));
+		$additionalInfo = '';
+
+		// @todo: replace backend shakey with certiicate
+		// $certificate = 23818E5AFF9A3B7EA60D35B0135A1EC523818E5AFF9A3B7EA60D35B0135A1EC523818E5AFF9A3B7EA60D35B0135A1EC523818E5AFF9A3B7EA60D35B0135A1EC5;
+		$currentTimestamp = round(microtime(true) * 1000) - strtotime(date("1-1-1970"));
+		// $currentTimestamp = round(microtime(true) * 1000) - strtotime(date("d-m-Y"));
+		// $currentTimestamp = round(microtime(true) * 1000) - strtotime(date("Y-m-d"));
 
 		// TranID . MerchantIP . TS . amount . currency . callback_url_desktop . TranTS;
-		$data = $orderId . $merchantId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp;
+		// $data = $orderId . $merchantId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp;
+		// $secureHash = base64_encode(hash('sha512', $data . $shaKey, true));
 
-		$secureHash = base64_encode(hash('sha512', $data . $shaKey, true));
+		$data = $orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate;
+		$secureHash = base64_encode(hash('sha512', $data, true));
 
 		$fieldsArr = array(
-			'OnlineQRParams' => [
-				'TranID' => $orderId,
-				'Amount' => $orderAmount,
-				'Currency' => $orderCurrency,
-				'CallBack' => $callbackURL,
-				'SecureHash' => $secureHash,
-				'TS' => (string) $currentTimestamp,
-				'TranTS' => (string) $orderTimestamp,
-				'MerchantIP' => $merchantId,
-				'ClientIP' => $clientIP
-			]
+			'TranID' => $orderId,
+			'Amount' => $orderAmount,
+			'Currency' => $orderCurrency,
+			'CallBackURL' => $callbackURL,
+			'SecureHash' => $secureHash,
+			'TS' => (string) $currentTimestamp,
+			'TranTS' => (string) $orderTimestamp,
+			'MerchantID' => $merchantId,
+			'ClientIP' => $clientIP,
+			'AdditionalInfo' => $additionalInfo
 		);
+		// $fieldsArr = array(
+		// 	'OnlineQRParams' => [
+		// 		'TranID' => $orderId,
+		// 		'Amount' => $orderAmount,
+		// 		'Currency' => $orderCurrency,
+		// 		'CallBack' => $callbackURL,
+		// 		'SecureHash' => $secureHash,
+		// 		'TS' => (string) $currentTimestamp,
+		// 		'TranTS' => (string) $orderTimestamp,
+		// 		'MerchantIP' => $merchantId,
+		// 		'ClientIP' => $clientIP
+		// 	]
+		// );
 
 		$debugData = array(
 			'request' => $fieldsArr
 		);
-
-		// $fieldsArr = array(
-		// 	'merchant_key' => $this->getMerchantKey(),
-		// 	'success_url' => $this->getCallbackUrl(),
-		// 	'cancelled_url'	=> $this->getCallbackUrl(),
-		// 	'deferred_url' => $this->getCallbackUrl(),
-		// 	'currency' => $order->getBaseCurrencyCode(),
-		// 	'invoice_id' => $orderId,
-		// 	'total'	=> $orderAmount,
-		// 	'description' => 'Payment for Order #'.$orderId,
-		// 	'extra_email' => $billingAddress->getEmail(),
-		// 	'extra_name' => $billingAddress->getFirstname().' '.$billingAddress->getLastname(),
-		// 	'extra_mobile' => $billingAddress->getTelephone()
-		// );
 
 		return $fieldsArr;
 	}
@@ -169,10 +177,11 @@ protected $_canRefundInvoicePartial = true;
 
 	public function IPNResponse($incrementId)
 	{
-		$url = 'https://stage.elbarid.com/HeyPay/HeyPay/HeyPayOnlineQR';
-		//'invoice_id='.$incrementId.'&merchant_key='.$this->getMerchantKey();
 		// @todo: change url
-		//$url = 'https://community.ipaygh.com/v1/gateway/status_chk?invoice_id='.$incrementId.'&merchant_key='.$this->getMerchantKey();
+		// $url = 'https://sKashServer/OnlinePayment/PayQR';
+		$url = 'https://stage.elbarid.com/OnlinePayment/PayQR';
+		// $url = 'https://stage.elbarid.com/HeyPay/HeyPay/HeyPayOnlineQR';
+
 		$ch = curl_init($url);
 		curl_setopt($ch, CURLOPT_POST, true);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, null);
@@ -202,9 +211,9 @@ protected $_canRefundInvoicePartial = true;
 		return $this->_encryptor->decrypt($this->getConfigData('merchant_id'));
 	}
 
-	public function getShaKey()
+	public function getCertificate()
 	{
-		return $this->_encryptor->decrypt($this->getConfigData('sha_key'));
+		return $this->_encryptor->decrypt($this->getConfigData('certificate'));
 	}
 
 	/**
