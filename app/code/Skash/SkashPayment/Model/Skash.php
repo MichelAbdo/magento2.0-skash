@@ -90,13 +90,13 @@ protected $_canRefundInvoicePartial = true;
 	 *
 	 * @return array
 	 */
-	public function getFormFields($order)
+	public function getRequestBody($order)
 	{
 		// $merchantIP = $this->getMerchantIP();
 		$merchantId = $this->getMerchantId();
 		$certificate = $this->getCertificate();
-		$callbackURL = 'http://localhost.com/skash/checkout/response/';
-		// $callbackURL = $this->getCallbackUrl();
+		// $callbackURL = 'http://localhost.com/skash/checkout/response/';
+		$callbackURL = $this->getCallbackUrl();
 
 		$orderId = (int) $order->getRealOrderId();
 		// $orderId = $order->getRealOrderId();
@@ -116,14 +116,16 @@ protected $_canRefundInvoicePartial = true;
 		// $currentTimestamp = round(microtime(true) * 1000) - strtotime(date("d-m-Y"));
 		// $currentTimestamp = round(microtime(true) * 1000) - strtotime(date("Y-m-d"));
 
-		// TranID . MerchantIP . TS . amount . currency . callback_url_desktop . TranTS;
-		// $data = $orderId . $merchantId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp;
-		// $secureHash = base64_encode(hash('sha512', $data . $shaKey, true));
+		//$data = $orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate;
+		$secureHash = base64_encode(
+			hash(
+				'sha512',
+				$orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate,
+				true
+			)
+		);
 
-		$data = $orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate;
-		$secureHash = base64_encode(hash('sha512', $data, true));
-
-		$fieldsArr = array(
+		return array(
 			'TranID' => $orderId,
 			'Amount' => $orderAmount,
 			'Currency' => $orderCurrency,
@@ -149,11 +151,11 @@ protected $_canRefundInvoicePartial = true;
 		// 	]
 		// );
 
-		$debugData = array(
-			'request' => $fieldsArr
-		);
+		// $debugData = array(
+		// 	'request' => $fieldsArr
+		// );
 
-		return $fieldsArr;
+		// return $fieldsArr;
 	}
 
 	/**
@@ -165,22 +167,52 @@ protected $_canRefundInvoicePartial = true;
 	 */
 	public function getCallbackUrl()
 	{
-		/* @todo: replace urls
-		Desktop: https://domain.com/request_payment_hey_pay_mobile/finalizeTransactionSkash
-		Mobile: Deeplink
-		*/
 		return $this->_urlBuilder->getUrl(
 			'skash/checkout/response',
 			['_secure' => true]
 		);
 	}
 
+	public function getTransactionQR($incrementId)
+	{
+// $data = array("name" => "Hagrid", "age" => "36");
+		$data_string = json_encode($this->getRequestBody());
+
+		$url = $this->getTransactionUrl();
+
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_POST, true);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+		    'Content-Type: application/json',
+		    'Content-Length: ' . strlen($data_string))
+		);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		// curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+		/*if($this->isTestMode()) {
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		}
+		else {
+			curl_setopt($ch, CURLOPT_SSL_CIPHER_LIST,'TLSv1');
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+		}*/
+		$response = curl_exec($ch);
+		curl_close($ch);
+		// $response = explode("~",$response);
+		// $result['trans_id']  = (isset($response[0]) && $response[0]) ? $response[0] : '';
+		// $result['status'] = (isset($response[1]) && $response[1]) ? $response[1] : '';
+		// $result['timestamp'] = (isset($response[2]) && $response[2]) ? $response[2] : '';
+
+		return $result;
+	}
+
 	public function IPNResponse($incrementId)
 	{
-		// @todo: change url
-		// $url = 'https://sKashServer/OnlinePayment/PayQR';
-		$url = 'https://stage.elbarid.com/OnlinePayment/PayQR';
-		// $url = 'https://stage.elbarid.com/HeyPay/HeyPay/HeyPayOnlineQR';
+		// @todo: replace urls Desktop VS Mobile
+		// $url = 'https://stage.elbarid.com/OnlinePayment/PayQR';
+		$url = $this->getTransactionUrl();
 
 		$ch = curl_init($url);
 		curl_setopt($ch, CURLOPT_POST, true);
@@ -225,11 +257,29 @@ protected $_canRefundInvoicePartial = true;
 	 */
 	public function getTransactionUrl($testMode = null)
 	{
+		//@todo: check if the url is fixed or needs to be dynamic
 		$testMode = $testMode === null ? $this->getConfigData("test") : (bool)$testMode;
 		if ($testMode) {
-			return "https://community.ipaygh.com/gateway";
+			return "https://stage.elbarid.com/OnlinePayment/PayQR";
 		}
-		return "https://community.ipaygh.com/gateway";
+		return "https://stage.elbarid.com/OnlinePayment/PayQR";
+	}
+
+	/**
+	 * Getter for URL to perform sKash requests, based on test mode by default
+	 *
+	 * @param bool|null $testMode Ability to specify test mode using
+	 *
+	 * @return string
+	 */
+	public function getDeeplinkUrl($testMode = null)
+	{
+		//@todo: check if the url is fixed or needs to be dynamic
+		$testMode = $testMode === null ? $this->getConfigData("test") : (bool)$testMode;
+		if ($testMode) {
+			return "https://stage.elbarid.com/OnlinePayment/PayQR";
+		}
+		return "https://stage.elbarid.com/OnlinePayment/PayQR";
 	}
 
 	/**

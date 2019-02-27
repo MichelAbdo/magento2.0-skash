@@ -62,7 +62,8 @@ function (
         },
 
         afterPlaceOrder: function () {
-        	window.location.replace(url.build('skash/checkout/redirect/'));
+            // window.location.replace(url.build('skash/checkout/redirect/'));
+        	window.location.replace(url.build('skash/checkout/transaction/'));
         },
 
         /** Returns send check to info */

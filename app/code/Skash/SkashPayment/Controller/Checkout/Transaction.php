@@ -2,13 +2,17 @@
 /**
  * Copyright © 2013-2017 Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
+ *
+ * After checkout, the js redirection will forward to the transaction controller which will
+ * either submit the data through an api call to skash to get the QR and display it
+ * or call the app using a deeplink if on mobile
  */
 namespace Skash\SkashPayment\Controller\Checkout;
 
 /**
  * Class Start
  */
-class Redirect extends \Magento\Framework\App\Action\Action
+class Transaction extends \Magento\Framework\App\Action\Action
 {
 	/**
      * @var \Magento\Checkout\Model\Session
@@ -62,17 +66,16 @@ class Redirect extends \Magento\Framework\App\Action\Action
      */
     public function execute()
     {
-        // die('here');
     	if (!$this->_objectManager->get('Magento\Checkout\Model\Session\SuccessValidator')->isValid()) {
             return $this->resultRedirectFactory->create()->setPath('checkout/cart');
         }
-        if($this->_checkoutSession->getLastRealOrderId()) {
+        if ($this->_checkoutSession->getLastRealOrderId()) {
     		$order = $this->_orderFactory->create()->loadByIncrementId(
                 $this->_checkoutSession->getLastRealOrderId()
             );
 
     		if ($order->getIncrementId()) {
-				$message = __("Customer was redirected to sKash Payment Gateway.");
+				$message = __("Getting sKash QR.");
 				$order->addStatusHistoryComment(
                     $message,
                     $order->getStatus()

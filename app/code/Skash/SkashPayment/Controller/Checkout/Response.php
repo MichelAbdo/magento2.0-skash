@@ -98,9 +98,15 @@ class Response extends \Magento\Framework\App\Action\Action
             return $this->resultRedirectFactory->create()->setPath('checkout/cart');
         }
         if($this->_checkoutSession->getLastRealOrderId()) {
-    		$order = $this->_orderFactory->create()->loadByIncrementId($this->_checkoutSession->getLastRealOrderId());
+    		$order = $this->_orderFactory->create()->loadByIncrementId(
+                $this->_checkoutSession->getLastRealOrderId()
+            );
+
     		if ($order->getIncrementId()) {
+
+                // @todo: change the logic here. should receive calls from the callback instead of calling
     			$response = $this->_sKashFactory->IPNResponse($order->getIncrementId());
+
     			if ($response['status']== \Skash\SkashPayment\Model\Config::PAYMENT_STATUS_PAID) {
     				if($order->canInvoice()) {
 				        $invoice = $this->_invoiceService->prepareInvoice($order);

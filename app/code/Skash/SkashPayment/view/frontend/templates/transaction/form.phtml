@@ -14,8 +14,11 @@
 // echo "--------- <br/>";
 // var_dump($block->escapeUrl($block->getTransactionUrl()));
 // echo "--------- <br/>";
-die('inside redirection form');
+die('here inside transaction form tempalte');
 var_dump($block->requestFields());
+echo "<br/><br/>";
+var_dump($block->getTransactionQR());
+
 // print_r(json_encode($block->requestFields()));
 die;
 ?>
