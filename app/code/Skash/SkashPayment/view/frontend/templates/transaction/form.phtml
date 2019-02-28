@@ -14,20 +14,44 @@
 // echo "--------- <br/>";
 // var_dump($block->escapeUrl($block->getTransactionUrl()));
 // echo "--------- <br/>";
-die('here inside transaction form tempalte');
-var_dump($block->requestFields());
-echo "<br/><br/>";
-var_dump($block->getTransactionQR());
+// die('here inside transaction form tempalte');
+// var_dump($block->getRequestFields());
+// echo "<br/><br/>";
+// var_dump($block->getTransactionQR());
 
-// print_r(json_encode($block->requestFields()));
-die;
+// // print_r(json_encode($block->requestFields()));
+// die;
 ?>
 <html>
 	<head>
 	</head>
 	<body>
 
-		<?php echo __("Your order has been placed!");?>
+		<?php
+		$qrResponse = $block->getTransactionQR();
+		if (isset($qrResponse['error'])) {
+			echo $qrResponse['error'];
+			//@todo show back button with a message
+		} else {
+			$tranID = $qrResponse['TranID'];
+			$pictureURL = $qrResponse['PictureURL'];
+			$returnText = $qrResponse['ReturnText'];
+			switch ($qrResponse['Flag']) {
+				case -1:
+					echo __($returnText);
+					break;
+				case 10:
+					echo __($returnText);
+					//@todo show back button with a message
+					break;
+				case 2:
+					echo __("Your order has been placed! Scan the QR with your sKash app to complete the payment.");
+					echo "<img src='$pictureURL' alt='sKash QR code' title='sKash QR code'/>";
+					break;
+			}
+		}
+
+		?>
 
 		<!-- @todo: get the response of the api call to display the QR image -->
 

@@ -103,10 +103,10 @@ class Form extends \Magento\Payment\Block\Form
         $this->_paymentMethodCode = \Skash\SkashPayment\Model\Skash::METHOD_SKASH;
     }
 
-    public function requestFields()
+    public function getRequestFields()
     {
     	$this->_order = $this->_getOrder();
-    	return $this->_paymentData->getMethodInstance($this->_paymentMethodCode)->getFormFields($this->_order);
+    	return $this->_paymentData->getMethodInstance($this->_paymentMethodCode)->getRequestFields($this->_order);
     }
 
     /**
@@ -161,7 +161,7 @@ class Form extends \Magento\Payment\Block\Form
      */
     public function getTransactionQR()
     {
-        return $this->_paymentData->getMethodInstance($this->_paymentMethodCode)->getTransactionQR();
+        return $this->_paymentData->getMethodInstance($this->_paymentMethodCode)->getTransactionQR($this->getRequestFields());
     }
 
 }

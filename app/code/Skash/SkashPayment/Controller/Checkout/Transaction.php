@@ -69,6 +69,7 @@ class Transaction extends \Magento\Framework\App\Action\Action
     	if (!$this->_objectManager->get('Magento\Checkout\Model\Session\SuccessValidator')->isValid()) {
             return $this->resultRedirectFactory->create()->setPath('checkout/cart');
         }
+
         if ($this->_checkoutSession->getLastRealOrderId()) {
     		$order = $this->_orderFactory->create()->loadByIncrementId(
                 $this->_checkoutSession->getLastRealOrderId()

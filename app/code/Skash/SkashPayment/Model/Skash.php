@@ -90,7 +90,7 @@ protected $_canRefundInvoicePartial = true;
 	 *
 	 * @return array
 	 */
-	public function getRequestBody($order)
+	public function getRequestFields($order)
 	{
 		// $merchantIP = $this->getMerchantIP();
 		$merchantId = $this->getMerchantId();
@@ -116,14 +116,8 @@ protected $_canRefundInvoicePartial = true;
 		// $currentTimestamp = round(microtime(true) * 1000) - strtotime(date("d-m-Y"));
 		// $currentTimestamp = round(microtime(true) * 1000) - strtotime(date("Y-m-d"));
 
-		//$data = $orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate;
-		$secureHash = base64_encode(
-			hash(
-				'sha512',
-				$orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate,
-				true
-			)
-		);
+		$hashData = $orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate;
+		$secureHash = base64_encode(hash('sha512', $hashData, true));
 
 		return array(
 			'TranID' => $orderId,
@@ -137,25 +131,6 @@ protected $_canRefundInvoicePartial = true;
 			'ClientIP' => $clientIP,
 			'AdditionalInfo' => $additionalInfo
 		);
-		// $fieldsArr = array(
-		// 	'OnlineQRParams' => [
-		// 		'TranID' => $orderId,
-		// 		'Amount' => $orderAmount,
-		// 		'Currency' => $orderCurrency,
-		// 		'CallBack' => $callbackURL,
-		// 		'SecureHash' => $secureHash,
-		// 		'TS' => (string) $currentTimestamp,
-		// 		'TranTS' => (string) $orderTimestamp,
-		// 		'MerchantIP' => $merchantId,
-		// 		'ClientIP' => $clientIP
-		// 	]
-		// );
-
-		// $debugData = array(
-		// 	'request' => $fieldsArr
-		// );
-
-		// return $fieldsArr;
 	}
 
 	/**
@@ -173,10 +148,9 @@ protected $_canRefundInvoicePartial = true;
 		);
 	}
 
-	public function getTransactionQR($incrementId)
+	public function getTransactionQR($requestFields)
 	{
-// $data = array("name" => "Hagrid", "age" => "36");
-		$data_string = json_encode($this->getRequestBody());
+		$data_string = json_encode($requestFields);
 
 		$url = $this->getTransactionUrl();
 
@@ -184,28 +158,26 @@ protected $_canRefundInvoicePartial = true;
 		curl_setopt($ch, CURLOPT_POST, true);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-		    'Content-Type: application/json',
-		    'Content-Length: ' . strlen($data_string))
+		    'Content-Type: application/json'
+			)
 		);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		// curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-		/*if($this->isTestMode()) {
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		}
-		else {
-			curl_setopt($ch, CURLOPT_SSL_CIPHER_LIST,'TLSv1');
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-		}*/
-		$response = curl_exec($ch);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+		$result = curl_exec($ch);
 		curl_close($ch);
-		// $response = explode("~",$response);
-		// $result['trans_id']  = (isset($response[0]) && $response[0]) ? $response[0] : '';
-		// $result['status'] = (isset($response[1]) && $response[1]) ? $response[1] : '';
-		// $result['timestamp'] = (isset($response[2]) && $response[2]) ? $response[2] : '';
 
-		return $result;
+		if (!$result || !json_decode($result)) {
+			return array('error' => __('Error while establishing connection.'));
+		}
+
+		$result = json_decode($result);
+
+		return array(
+			'Flag' => $result->Flag,
+			'TranID' => $result->TranID,
+			'PictureURL' => $result->PictureURL,
+			'ReturnText' => $result->ReturnText
+		);
 	}
 
 	public function IPNResponse($incrementId)
