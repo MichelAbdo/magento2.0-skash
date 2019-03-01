@@ -7,36 +7,22 @@
 namespace Skash\SkashPayment\Model;
 
 use Skash\SkashPayment\Api\Skash\CallbackInterface;
-
-// use Magento\Framework\Exception\InputException;
-// use Magento\Framework\Exception\NoSuchEntityException;
-// use \Magento\Framework\App\RequestInterface;
-
-
 use \Magento\Framework\App\Action\Context;
 use \Magento\Checkout\Model\Session as CheckoutSession;
 use \Magento\Sales\Model\OrderFactory;
 use \Skash\SkashPayment\Model\Skash as SKashFactory;
-use \Magento\Paypal\Helper\Checkout as CheckoutHelper;
-use \Magento\Sales\Api\OrderManagementInterface as OrderManagement;
+use \Magento\Paypal\Helper\Checkout;
+use \Magento\Sales\Api\OrderManagementInterface;
 use \Magento\Sales\Model\Service\InvoiceService;
 use \Magento\Sales\Model\Order\Email\Sender\OrderSender;
 use \Magento\Sales\Model\Order\Email\Sender\InvoiceSender;
-
 use \Magento\Framework\Encryption\EncryptorInterface;
 use \Magento\Framework\App\Config\ScopeConfigInterface;
-
 use \Magento\Framework\DB\Transaction as DbTransaction;
 use \Psr\Log\LoggerInterface;
 
-//extends \Magento\Framework\Model\AbstractModel
 class Callback implements CallbackInterface
 {
-
-	/**
-     * @var \Magento\Framework\App\RequestInterface
-     */
-    // protected $_request;
 
 	/**
      * @var \Magento\Checkout\Model\Session
@@ -103,20 +89,17 @@ class Callback implements CallbackInterface
      * @param \Psr\Log\LoggerInterface $logger
      */
     public function __construct(
- 		// RequestInterface $request,
 		Context $context,
 		CheckoutSession $checkoutSession,
 		OrderFactory $orderFactory,
 		SKashFactory $sKashFactory,
-		CheckoutHelper $checkoutHelper,
-		OrderManagement $orderManagement,
+		Checkout $checkoutHelper,
+		OrderManagementInterface $orderManagement,
 		InvoiceService $invoiceService,
 		OrderSender $orderSender,
 		InvoiceSender $invoiceSender,
-
 		EncryptorInterface $encryptor,
 		ScopeConfigInterface $scopeConfig,
-
 		DbTransaction $dbTransaction,
 		LoggerInterface $logger
     ) {
@@ -194,7 +177,6 @@ class Callback implements CallbackInterface
 		var_dump($orderTimestamp);
 		var_dump($secure_hash);
 		var_dump($orderSecureHash);
-
 
 		if($order->canInvoice()) {
 			$invoice = $this->_invoiceService->prepareInvoice($order);
