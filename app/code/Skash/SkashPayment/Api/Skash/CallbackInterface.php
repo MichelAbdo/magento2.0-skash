@@ -20,7 +20,15 @@ interface CallbackInterface
      * @param string $currency       Transaction Currency
      * @param string $secure_hash    Secure Hash
      *
-     * @return boolean Success or failure
+     * @return \Magento\Framework\Controller\Result\Json
      */
-	public function response($transaction_id, $status, $timestamp, $merchant_id, $amount, $currency, $secure_hash);
+	public function response(
+          $transaction_id,
+          $status,
+          $timestamp,
+          $merchant_id,
+          $amount,
+          $currency,
+          $secure_hash
+     );
 }

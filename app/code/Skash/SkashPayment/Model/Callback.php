@@ -7,8 +7,8 @@
 namespace Skash\SkashPayment\Model;
 
 use Skash\SkashPayment\Api\Skash\CallbackInterface;
-use \Magento\Framework\App\Action\Context;
-use \Magento\Checkout\Model\Session as CheckoutSession;
+
+use \Magento\Framework\Model\Context;
 use \Magento\Sales\Model\OrderFactory;
 use \Skash\SkashPayment\Model\Skash as SKashFactory;
 use \Magento\Paypal\Helper\Checkout;
@@ -19,15 +19,14 @@ use \Magento\Sales\Model\Order\Email\Sender\InvoiceSender;
 use \Magento\Framework\Encryption\EncryptorInterface;
 use \Magento\Framework\App\Config\ScopeConfigInterface;
 use \Magento\Framework\DB\Transaction as DbTransaction;
-use \Psr\Log\LoggerInterface;
+use \Magento\Framework\Controller\Result\JsonFactory;
 
 class Callback implements CallbackInterface
 {
 
-	/**
-     * @var \Magento\Checkout\Model\Session
-     */
-    protected $_checkoutSession;
+	const PAYMENT_STATUS_REJECTED = 0;
+
+	const PAYMENT_STATUS_APPROVED = 1;
 
     /**
      * @var \Magento\Sales\Model\OrderFactory
@@ -57,7 +56,7 @@ class Callback implements CallbackInterface
 	/**
      * @var \Psr\Log\LoggerInterface
      */
-    protected $_logger;
+    // protected $_logger;
 
     /**
      * @var \Skash\SkashPayment\Model\Skash
@@ -83,14 +82,27 @@ class Callback implements CallbackInterface
 	 */
 	protected $_scopeConfig;
 
-    /**
-     * @param \Magento\Framework\App\Action\Context $context
-     * @param \Skash\SkashPayment\Model\Skash $sKashFactory
-     * @param \Psr\Log\LoggerInterface $logger
-     */
+	/**
+	* @var \Magento\Framework\Controller\Result\JsonFactory
+	*/
+	protected $_resultJsonFactory;
+
+	/**
+	 * @param \Magento\Framework\Model\Context $context
+	 * @param \Magento\Sales\Model\OrderFactory $orderFactory
+	 * @param \Skash\SkashPayment\Model\Skash $sKashFactory
+	 * @param \Magento\Paypal\Helper\Checkout $checkoutHelper
+	 * @param \Magento\Sales\Api\OrderManagementInterface $orderManagement
+	 * @param \Magento\Sales\Model\Service\InvoiceService $invoiceService
+	 * @param \Magento\Sales\Model\Order\Email\Sender\OrderSende $orderSender
+	 * @param \Magento\Sales\Model\Order\Email\Sender\InvoiceSenderr $invoiceSender
+	 * @param \Magento\Framework\Encryption\EncryptorInterface $encryptor
+	 * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+	 * @param \Magento\Framework\DB\Transaction $resultJsonFactory
+	 * @param \Magento\Framework\Controller\Result\JsonFactory $dbTransaction
+	 */
     public function __construct(
 		Context $context,
-		CheckoutSession $checkoutSession,
 		OrderFactory $orderFactory,
 		SKashFactory $sKashFactory,
 		Checkout $checkoutHelper,
@@ -100,27 +112,26 @@ class Callback implements CallbackInterface
 		InvoiceSender $invoiceSender,
 		EncryptorInterface $encryptor,
 		ScopeConfigInterface $scopeConfig,
-		DbTransaction $dbTransaction,
-		LoggerInterface $logger
+		JsonFactory $resultJsonFactory,
+		DbTransaction $dbTransaction
+		// LoggerInterface $logger
     ) {
-		// $this->_request = $request;
-		$this->_checkoutSession = $checkoutSession;
 		$this->_orderFactory = $orderFactory;
 		$this->_orderManagement = $orderManagement;
 		$this->_orderSender = $orderSender;
 		$this->_invoiceService = $invoiceService;
 		$this->_invoiceSender = $invoiceSender;
 		$this->_transaction = $dbTransaction;
-		$this->_logger = $logger;
+		// $this->_logger = $logger;
 		$this->_sKashFactory = $sKashFactory;
 		$this->_checkoutHelper = $checkoutHelper;
-
 		$this->_encryptor = $encryptor;
 		$this->_scopeConfig = $scopeConfig;
+		$this->_resultJsonFactory = $resultJsonFactory;
     }
 
     /**
-     * Returns greeting message to user
+     * Update the database order status if the transaction was succesfull
      *
      * @api
      *
@@ -132,28 +143,74 @@ class Callback implements CallbackInterface
      * @param string $currency       Transaction Currency
      * @param string $secure_hash    Secure Hash
      *
-     * @return string Greeting message with users name.
+     * @return \Magento\Framework\Controller\Result\Json
      */
-    public function response($transaction_id, $status, $timestamp, $merchant_id, $amount, $currency, $secure_hash)
-    {
-		// If status is 0 then transaction is rejected
-		// If Status is 1 then transaction is approved
+    public function response(
+    	$transaction_id,
+    	$status,
+    	$timestamp,
+    	$merchant_id,
+    	$amount,
+    	$currency,
+    	$secure_hash
+    ) {
+    	if (empty($transaction_id) || empty($status)
+    		|| empty($timestamp) || empty($merchant_id)
+    		|| empty($amount) || empty($currency)
+    		|| empty($secure_hash)
+    	) {
+			return [[
+				'status' => 'failure',
+				'message' => 'Invalid / Empty Transaction Params.'
+			]];
+    	}
 
-		// @todo: define status in \Skash\SkashPayment\Model\Config::PAYMENT_STATUS_PAID
-		// @todo: switch case order status? is there a canceled status?
-		if ($status == 0) {
-			// @todo: json_encode response array
-			// @todo: error log
-			return 'Transaction Rejected';
-			// return false;
-		}
+    	// Validate the status' value
+    	if (!$this->is_valid_status($status)) {
+			return [[
+				'status' => 'failure',
+				'message' => 'Invalid Transaction Status'
+			]];
+    	}
+
+    	// Validate the transaction_id's value
 		$order = $this->_orderFactory->create()->loadByIncrementId(
 			$transaction_id
 		);
-		if (!$order || empty($order)) {
-			return 'Order not found';
-			// return false;
-			// @todo: error log
+    	if (!$order || empty($order)) {
+			return [[
+				'status' => 'failure',
+				'message' =>  "Order not found for transaction '$transaction_id'"
+			]];
+    	}
+
+    	// Rejected Order
+		if ($status == self::PAYMENT_STATUS_REJECTED) {
+			$message = __('Skash Transaction Rejected.');
+			$this->_orderManagement->cancel(
+				$order->getEntityId()
+			);
+			$order->addStatusHistoryComment($message, "canceled")
+				  ->setIsCustomerNotified(false)->save();
+			return [[
+				'status' => 'failure',
+				'message' => $message
+			]];
+		}
+
+		if ($order->getStatus() == \Magento\Sales\Model\Order::STATE_PROCESSING) {
+			// @todo: check why the json body is returned empty
+			// https://www.brainacts.com/blog/how-to-return-a-json-response-from-a-controller-in-magento-2
+			/** @var \Magento\Framework\Controller\Result\Json $resultJson */
+			// $result = $this->_resultJsonFactory->create();
+			// return $result->setData(array(
+			// 	'status' => 'failure',
+			// 	'message' => 'Order already Updated.'
+			// ));
+			return [[
+				'status' => __('failure'),
+				'message' => __('Order already Updated.')
+			]];
 		}
 
 		$merchantId = $this->getMerchantId();
@@ -161,24 +218,27 @@ class Callback implements CallbackInterface
 		$orderAmount = (double) $order->getBaseGrandTotal();
 		$orderCurrency = $order->getBaseCurrencyCode();
 		$orderTimestamp = strtotime($order->getCreatedAt());
-
 		$orderHashData = $orderId . $status . $orderTimestamp . $merchantId . $orderAmount . $orderCurrency;
 		$orderSecureHash = base64_encode(hash('sha512', $orderHashData, true));
 
 		if ($secure_hash != $orderSecureHash) {
-			return 'Transaction secure hash invalid';
+			return json_encode(array(
+				'status' => __('failure'),
+				'message' => __('Invalid Transaction Params.')
+			));
 		}
 
-		var_dump($orderId);
-		var_dump($merchantId );
-		var_dump($orderAmount);
-		var_dump($orderCurrency);
-		var_dump($order->getCreatedAt());
-		var_dump($orderTimestamp);
-		var_dump($secure_hash);
-		var_dump($orderSecureHash);
+		// // var_dump($order->getStatus());die('------');
+		// var_dump($orderId);
+		// var_dump($merchantId );
+		// var_dump($orderAmount);
+		// var_dump($orderCurrency);
+		// var_dump($order->getCreatedAt());
+		// var_dump($orderTimestamp);
+		// var_dump($secure_hash);
+		// var_dump($orderSecureHash);
 
-		if($order->canInvoice()) {
+		if ($order->canInvoice()) {
 			$invoice = $this->_invoiceService->prepareInvoice($order);
 			$invoice->register();
 			$invoice->save();
@@ -195,11 +255,6 @@ class Callback implements CallbackInterface
 				$order->addStatusToHistory(\Magento\Sales\Model\Order::STATE_PROCESSING, null, true);
 			}
 			$order = $order->save();
-			/*if ($invoice && !$invoice->getEmailSent() && $sendInvoice) {
-				$this->_invoiceSender->send($invoice);
-				$message = __('Notified customer about invoice #%1', $invoice->getIncrementId());
-				$order->addStatusToHistory(\Magento\Sales\Model\Order::STATE_PROCESSING, $message, true)->save();
-			}*/
 		}
 	    $payment = $order->getPayment();
 		$payment->setLastTransId($orderId);
@@ -221,96 +276,30 @@ class Callback implements CallbackInterface
 		$payment->save();
 		$order->save();
 		// $this->_redirect('checkout/onepage/success');
-		return 'Success';
-		// var_dump($a);
-		die('end');
-		if (!$this->_objectManager->get('Magento\Checkout\Model\Session\SuccessValidator')->isValid()) {
-			return $this->resultRedirectFactory->create()->setPath('checkout/cart');
-		}
-		if($this->_checkoutSession->getLastRealOrderId()) {
-			$order = $this->_orderFactory->create()->loadByIncrementId(
-				$this->_checkoutSession->getLastRealOrderId()
-			);
+		return json_encode(array(
+			'status' => 'success',
+			'message' => 'Transaction made successfully.'
+		));
+	}
 
-			if ($order->getIncrementId()) {
-
-				// @todo: change the logic here. should receive calls from the callback instead of calling
-				$response = $this->_sKashFactory->IPNResponse($order->getIncrementId());
-
-				if ($response['status']== \Skash\SkashPayment\Model\Config::PAYMENT_STATUS_PAID) {
-					if($order->canInvoice()) {
-						$invoice = $this->_invoiceService->prepareInvoice($order);
-						$invoice->register();
-						$invoice->save();
-						$transactionSave = $this->_transaction->addObject(
-							$invoice
-						)->addObject(
-							$invoice->getOrder()
-						);
-						$transactionSave->save();
-						$order->setState(\Magento\Sales\Model\Order::STATE_PROCESSING);
-						$order->setStatus(\Magento\Sales\Model\Order::STATE_PROCESSING);
-						if ($invoice && !$order->getEmailSent()) {
-							$this->_orderSender->send($order);
-							$order->addStatusToHistory(\Magento\Sales\Model\Order::STATE_PROCESSING, null, true);
-						}
-						$order = $order->save();
-						/*if ($invoice && !$invoice->getEmailSent() && $sendInvoice) {
-						$this->_invoiceSender->send($invoice);
-						$message = __('Notified customer about invoice #%1', $invoice->getIncrementId());
-						$order->addStatusToHistory(\Magento\Sales\Model\Order::STATE_PROCESSING, $message, true)->save();
-					}*/
-					}
-					$payment = $order->getPayment();
- 					$payment->setLastTransId($response['trans_id']);
-					$payment->setTransactionId($response['trans_id']);
-					$formatedPrice = $order->getBaseCurrency()->formatTxt($order->getGrandTotal());
-					$message = __('The cuptured amount is %1.', $formatedPrice);
-					$payment->setAdditionalInformation([\Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array('StatusId' => $response['status'], 'Timestamp' =>  $response['timestamp'])]);
-					$transaction = $payment->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE);
-					$payment->addTransactionCommentsToOrder(
-						$transaction,
-						$message
-					);
-					$payment->setParentTransactionId(null);
-					$payment->save();
-					$order->save();
-					$this->_redirect('checkout/onepage/success');
-					return;
-				} elseif($response['status']==\Skash\SkashPayment\Model\Config::PAYMENT_STATUS_CANCELLED) {
-					$message = __("Order has been cancelled by user");
-					$this->_orderManagement->cancel($order->getEntityId());
-					$order->addStatusHistoryComment($message, "canceled")->setIsCustomerNotified(false)->save();
-					$this->messageManager->addErrorMessage($message);
-					$this->_redirect('checkout/cart');
-					return;
-				} elseif($response['status']==\Skash\SkashPayment\Model\Config::PAYMENT_STATUS_EXPIRED) {
-					$message = __("Your order has been expired.");
-					$this->_orderManagement->cancel($order->getEntityId());
-					$order->addStatusHistoryComment($message, "canceled")->setIsCustomerNotified(false)->save();
-					$this->messageManager->addErrorMessage($message);
-					$this->_redirect('checkout/cart');
-					return;
-				} else {
-					$this->messageManager->addErrorMessage("Your order has been pay failed.");
-				}
-			}
-		}
-		$this->_redirect('checkout/cart');
-
-		return;
+    /**
+     * Check if the status of the order is valid
+     *
+     * @param string $status Transaction status
+     */
+	protected function is_valid_status($status)
+    {
+		return in_array(
+			$status,
+			array(self::PAYMENT_STATUS_REJECTED, self::PAYMENT_STATUS_APPROVED)
+		);
 	}
 
 	/**
-	 * Get frontend checkout session object
+	 * Get the merchant id from the modules' backend configiguration
 	 *
-	 * @return \Magento\Checkout\Model\Session
+	 * @return string Merchant id
 	 */
-    protected function _getCheckout()
-    {
-		return $this->_checkoutSession;
-    }
-
 	public function getMerchantId()
 	{
 		$merchant_id = $this->_scopeConfig->getValue(
