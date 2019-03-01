@@ -3,30 +3,12 @@
  * Copyright © 2013-2017 Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
-
-/**
- * @var \Magento\Paypal\Block\Payflow\Link\Iframe $block
- * @see \Magento\Paypal\Block\Payflow\Link\Iframe
- */
-
-
-// var_dump($block->getTransactionUrl());
-// echo "--------- <br/>";
-// var_dump($block->escapeUrl($block->getTransactionUrl()));
-// echo "--------- <br/>";
-// die('here inside transaction form tempalte');
-// var_dump($block->getRequestFields());
-// echo "<br/><br/>";
-// var_dump($block->getTransactionQR());
-
-// // print_r(json_encode($block->requestFields()));
-// die;
 ?>
 <html>
 	<head>
+		<!-- @todo: add magento header and footer -->
 	</head>
 	<body>
-
 		<?php
 		$qrResponse = $block->getTransactionQR();
 		if (isset($qrResponse['error'])) {
@@ -38,8 +20,6 @@
 			$returnText = $qrResponse['ReturnText'];
 			switch ($qrResponse['Flag']) {
 				case -1:
-					echo __($returnText);
-					break;
 				case 10:
 					echo __($returnText);
 					//@todo show back button with a message
@@ -50,19 +30,7 @@
 					break;
 			}
 		}
-
 		?>
-
-		<!-- @todo: get the response of the api call to display the QR image -->
-
-		<<!-- form id="skash_form" name="skash_form" method="POST" action="<?php // echo $block->escapeUrl($block->getTransactionUrl()); ?>">
-			<?php // foreach ($block->requestFields() as $fieldName => $fieldValue): ?>
-				<input type="hidden" name="<?php // echo $block->escapeHtml($fieldName); ?>" value="<?php // echo $fieldValue; ?>"/>
-			<?php // ndforeach;?>
-		</form> -->
-
-		<!-- @todo: add a back button -->
-
 		<script>
 		    // document.getElementById('skash_form').submit();
 		</script>

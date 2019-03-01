@@ -7,10 +7,26 @@
  */
 namespace Skash\SkashPayment\Model;
 
+use \Magento\Payment\Model\Method\AbstractMethod;
+use \Magento\Framework\Model\Context;
+use \Magento\Framework\Registry;
+use \Magento\Framework\Api\ExtensionAttributesFactory;
+use \Magento\Framework\Api\AttributeValueFactory;
+use \Magento\Payment\Helper\Data as PaymentData;
+use \Magento\Framework\App\Config\ScopeConfigInterface;
+use \Magento\Payment\Model\Method\Logger;
+use \Magento\Framework\Module\ModuleListInterface;
+use \Magento\Framework\Stdlib\DateTime\TimezoneInterface;
+use \Magento\Sales\Model\OrderFactory;
+use \Magento\Framework\Encryption\EncryptorInterface;
+use \Magento\Framework\UrlInterface;
+use \Magento\Framework\Model\ResourceModel\AbstractResource;
+use \Magento\Framework\Data\Collection\AbstractDb;
+
 /**
- * Pay In Store payment method model
+ * sKash payment method model
  */
-class Skash extends \Magento\Payment\Model\Method\AbstractMethod
+class Skash extends AbstractMethod
 {
 
 	/*
@@ -50,20 +66,20 @@ protected $_canRefundInvoicePartial = true;
 	protected $_encryptor;
 
 	public function __construct(
-		\Magento\Framework\Model\Context $context,
-		\Magento\Framework\Registry $registry,
-		\Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory,
-		\Magento\Framework\Api\AttributeValueFactory $customAttributeFactory,
-		\Magento\Payment\Helper\Data $paymentData,
-		\Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-		\Magento\Payment\Model\Method\Logger $logger,
-		\Magento\Framework\Module\ModuleListInterface $moduleList,
-		\Magento\Framework\Stdlib\DateTime\TimezoneInterface $localeDate,
-		\Magento\Sales\Model\OrderFactory $orderFactory,
-		\Magento\Framework\Encryption\EncryptorInterface $encryptor,
-		\Magento\Framework\UrlInterface $urlBuilder,
-		\Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
-		\Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
+		Context $context,
+		Registry $registry,
+		ExtensionAttributesFactory $extensionFactory,
+		AttributeValueFactory $customAttributeFactory,
+		PaymentData $paymentData,
+		ScopeConfigInterface $scopeConfig,
+		Logger $logger,
+		ModuleListInterface $moduleList,
+		TimezoneInterface $localeDate,
+		OrderFactory $orderFactory,
+		EncryptorInterface $encryptor,
+		UrlInterface $urlBuilder,
+		AbstractResource $resource = null,
+		AbstractDb $resourceCollection = null,
 		array $data = []
 	) {
 		$this->_orderFactory = $orderFactory;
@@ -92,30 +108,16 @@ protected $_canRefundInvoicePartial = true;
 	 */
 	public function getRequestFields($order)
 	{
-		// $merchantIP = $this->getMerchantIP();
 		$merchantId = $this->getMerchantId();
 		$certificate = $this->getCertificate();
-		// $callbackURL = 'http://localhost.com/skash/checkout/response/';
 		$callbackURL = $this->getCallbackUrl();
-
-		$orderId = (int) $order->getRealOrderId();
-		// $orderId = $order->getRealOrderId();
+		$orderId = $order->getRealOrderId();
 		$orderAmount = (double) $order->getBaseGrandTotal();
-		// $orderCurrency = 'EUR';
 		$orderCurrency = $order->getBaseCurrencyCode();
 		$orderTimestamp = strtotime($order->getCreatedAt());
-		// $clientIP = '67.43.3.231';
 		$clientIP = $order->getRemoteIp();
-
-		// $currentTimestamp = strtotime(date("Y-m-d"));
 		$additionalInfo = '';
-
-		// @todo: replace backend shakey with certiicate
-		// $certificate = 23818E5AFF9A3B7EA60D35B0135A1EC523818E5AFF9A3B7EA60D35B0135A1EC523818E5AFF9A3B7EA60D35B0135A1EC523818E5AFF9A3B7EA60D35B0135A1EC5;
 		$currentTimestamp = round(microtime(true) * 1000) - strtotime(date("1-1-1970"));
-		// $currentTimestamp = round(microtime(true) * 1000) - strtotime(date("d-m-Y"));
-		// $currentTimestamp = round(microtime(true) * 1000) - strtotime(date("Y-m-d"));
-
 		$hashData = $orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate;
 		$secureHash = base64_encode(hash('sha512', $hashData, true));
 
@@ -134,25 +136,36 @@ protected $_canRefundInvoicePartial = true;
 	}
 
 	/**
-	 * Get callback url
-	 *
-	 * @param string $actionName
+	 * Get the callback url
 	 *
 	 * @return string
 	 */
 	public function getCallbackUrl()
 	{
 		return $this->_urlBuilder->getUrl(
-			'skash/checkout/response',
+			'skash/callback/response',
 			['_secure' => true]
 		);
 	}
 
 	public function getTransactionQR($requestFields)
 	{
+		// @todo: Check https://devdocs.magento.com/guides/v2.3/get-started/gs-web-api-request.html
+		/*
+		$client = new \Zend\Http\Client();
+		$options = [
+		   'adapter'   => 'Zend\Http\Client\Adapter\Curl',
+		   'curloptions' => [CURLOPT_FOLLOWLOCATION => true],
+		   'maxredirects' => 0,
+		   'timeout' => 30
+		 ];
+		 $client->setOptions($options);
+
+		 $response = $client->send($request);
+		*/
 		$data_string = json_encode($requestFields);
 
-		$url = $this->getTransactionUrl();
+		$url = $this->getQRTransactionUrl();
 
 		$ch = curl_init($url);
 		curl_setopt($ch, CURLOPT_POST, true);
@@ -180,71 +193,43 @@ protected $_canRefundInvoicePartial = true;
 		);
 	}
 
-	public function IPNResponse($incrementId)
-	{
-		// @todo: replace urls Desktop VS Mobile
-		// $url = 'https://stage.elbarid.com/OnlinePayment/PayQR';
-		$url = $this->getTransactionUrl();
-
-		$ch = curl_init($url);
-		curl_setopt($ch, CURLOPT_POST, true);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, null);
-		curl_setopt($ch, CURLOPT_HEADER, false);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		/*if($this->isTestMode()) {
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		}
-		else {
-			curl_setopt($ch, CURLOPT_SSL_CIPHER_LIST,'TLSv1');
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-		}*/
-		$response = curl_exec($ch);
-		curl_close($ch);
-		$response = explode("~",$response);
-		$result['trans_id']  = (isset($response[0]) && $response[0]) ? $response[0] : '';
-		$result['status'] = (isset($response[1]) && $response[1]) ? $response[1] : '';
-		$result['timestamp'] = (isset($response[2]) && $response[2]) ? $response[2] : '';
-
-		return $result;
-	}
-
+	/**
+	 * Get the merchant id from the modules' backend configiguration
+	 *
+	 * @return string Merchant id
+	 */
 	public function getMerchantId()
 	{
 		return $this->_encryptor->decrypt($this->getConfigData('merchant_id'));
 	}
 
+	/**
+	 * Get the merchant certificate from the modules' backend configiguration
+	 *
+	 * @return string Certificate
+	 */
 	public function getCertificate()
 	{
 		return $this->_encryptor->decrypt($this->getConfigData('certificate'));
 	}
 
 	/**
-	 * Getter for URL to perform sKash requests, based on test mode by default
-	 *
-	 * @param bool|null $testMode Ability to specify test mode using
+	 * Get the sKash QR URL
 	 *
 	 * @return string
 	 */
-	public function getTransactionUrl($testMode = null)
+	public function getQRTransactionUrl()
 	{
 		//@todo: check if the url is fixed or needs to be dynamic
-		$testMode = $testMode === null ? $this->getConfigData("test") : (bool)$testMode;
-		if ($testMode) {
-			return "https://stage.elbarid.com/OnlinePayment/PayQR";
-		}
 		return "https://stage.elbarid.com/OnlinePayment/PayQR";
 	}
 
 	/**
-	 * Getter for URL to perform sKash requests, based on test mode by default
-	 *
-	 * @param bool|null $testMode Ability to specify test mode using
+	 * Get the sKash app deeplink requests URL
 	 *
 	 * @return string
 	 */
-	public function getDeeplinkUrl($testMode = null)
+	public function getDeeplinkUrl()
 	{
 		//@todo: check if the url is fixed or needs to be dynamic
 		$testMode = $testMode === null ? $this->getConfigData("test") : (bool)$testMode;

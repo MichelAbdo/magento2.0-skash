@@ -4,7 +4,6 @@
  * See COPYING.txt for license details.
  */
 namespace Skash\SkashPayment\Block\Transaction;
-// namespace Skash\SkashPayment\Block\Redirect;
 
 use Magento\Customer\Helper\Session\CurrentCustomer;
 use Magento\Framework\Locale\ResolverInterface;

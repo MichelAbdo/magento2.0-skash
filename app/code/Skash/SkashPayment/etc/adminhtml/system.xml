@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <!--
 /**
- * Copyright © 2015 Magento. All rights reserved.
- * See COPYING.txt for license details.
+ * Copyright © 2015 Magento. All rights reserved. See COPYING.txt for license details.
  */
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../Config/etc/system_file.xsd">
@@ -17,11 +16,6 @@
                 <field id="title" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0" canRestore="1">
                     <label>Title</label>
                 </field>
-                <!-- <field id="merchant_key" translate="label" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0" canRestore="1"> -->
-                <!-- <field id="merchant_ip" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0" canRestore="1">
-                    <label>Merchant IP</label>
-                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                </field> -->
                 <field id="merchant_id" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0" canRestore="1">
                     <label>Merchant ID</label>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
@@ -52,7 +46,6 @@
                     <frontend_class>validate-number</frontend_class>
                 </field>
             </group>
-            <!-- payment-group -->
         </section>
     </system>
 </config>
