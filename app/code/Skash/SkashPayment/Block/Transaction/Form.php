@@ -164,4 +164,20 @@ class Form extends \Magento\Payment\Block\Form
         return $url;
     }
 
+    /**
+     * Get the callback url
+     *
+     * @return string
+     */
+    public function getStatusChangeUrl()
+    {
+        // @todo: fix the url
+        $order = $this->_getOrder();
+        return $this->_urlBuilder->getUrl(
+            'rest/V1/api/skash/callback/'
+            // 'rest/V1/api/skash/callback/status_changed?order_id=' . $order->getRealOrderId()
+            // ['_secure' => true]
+        );
+    }
+
 }

@@ -9,7 +9,10 @@ $qrResponse = $block->getTransactionQR();
 if (isset($qrResponse['error'])) {
 	?>
 	<div>
-		<p><?php echo __('An error occured, try again or choose another payment method.'); ?></p>
+		<h2>
+			<?php echo __("An error occured!"); ?>
+		</h2>
+		<p><?php echo __('Try again or choose another payment method.'); ?></p>
 		<p>
 			<?php echo __('Click <a href="%1">here</a> to go back to checkout page.',
 	            $block->escapeUrl($block->getCheckoutUrl())); ?>
@@ -32,12 +35,15 @@ if (isset($qrResponse['error'])) {
 			break;
 		case $block->PAYMENT_STATUS_SUCCESS:
 			?>
-			<div>
+			<div id="skash_qr_response" data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_changed?order_id=1' . $tranID; ?>">
+				<h2>
+					<?php echo __("Your order has been placed!"); ?>
+				</h2>
 				<p>
-					<?php echo __("Your order has been placed! Scan the QR with your sKash app to complete the payment."); ?>
+					<?php echo __("Scan the QR with your sKash app to complete the payment."); ?>
 				</p>
 				<p>
-					<?php echo "<img src='$pictureURL' alt='sKash QR code' title='sKash QR code'/>"; ?>
+					<?php echo "<img id='skash_qr_image' src='$pictureURL' alt='sKash QR code' title='sKash QR code'/>"; ?>
 				</p>
 			</div>
 			<?php
@@ -46,5 +52,38 @@ if (isset($qrResponse['error'])) {
 }
 ?>
 <script>
-    // document.getElementById('skash_form').submit();
+	// @todo: move js to separate file https://magently.com/blog/introduction-knockout-js-magento-2/
+require([
+    'jquery'  // the alias for "mage/accordion"
+], function ($) {
+
+    $(function () { // to ensure that code evaluates on page load
+		console.log('here -----------------');
+		var url = $('#skash_qr_response').data('status-check');
+		console.log(url);
+        $(document).ready(function() {
+            $.ajax({
+                url: url,
+                type: "GET",
+                dataType: 'json'
+            }).done(function (data) {
+				console.log('success -----------------');
+				console.log(data);
+                // $('#test').removeClass('hideme');
+                // var html = template('#test', {posts:data});
+                // $('#test').html(html);
+            });
+        });
+    });
+
+});
 </script>
+
+<style>
+@media (min-width: 978px) {
+	#skash_qr_image {
+		max-width: 50%;
+		height: auto;
+	}
+}
+</style>
