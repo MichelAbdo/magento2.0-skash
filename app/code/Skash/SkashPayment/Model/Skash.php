@@ -29,17 +29,11 @@ use \Magento\Framework\Data\Collection\AbstractDb;
 class Skash extends AbstractMethod
 {
 
-	/*
-	 * sKash Payment
-	 */
-	const METHOD_SKASH = 'skash';
+	const PAYMENT_STATUS_SUCCESS = 2;
 
-	/**
-	 * Payment code
-	 *
-	 * @var string
-	 */
-	protected $_code = self::METHOD_SKASH;
+	const PAYMENT_STATUS_ERROR = -1;
+
+	const PAYMENT_STATUS_INVALID_DATA = 10;
 
 	/**
 	 * Availability option
@@ -49,9 +43,9 @@ class Skash extends AbstractMethod
 	protected $_isOffline = false;
 	protected $_isGateway = true;
 	protected $_canCapture = true;
-protected $_canCapturePartial = true;
+	protected $_canCapturePartial = true;
 	protected $_canRefund = true;
-protected $_canRefundInvoicePartial = true;
+	protected $_canRefundInvoicePartial = true;
 	protected $_isInitializeNeeded = true;
 
 	protected $_order;
@@ -65,6 +59,23 @@ protected $_canRefundInvoicePartial = true;
 	 */
 	protected $_encryptor;
 
+	/**
+	 * @param \Magento\Framework\Model\Context 						  $context
+	 * @param \Magento\Framework\Registry 							  $registry
+	 * @param \Magento\Framework\Api\ExtensionAttributesFactory 	  $extensionFactory
+	 * @param \Magento\Framework\Api\AttributeValueFactory 			  $customAttributeFactory
+	 * @param \Magento\Payment\Helper\Data 							  $paymentData
+	 * @param \Magento\Framework\App\Config\ScopeConfigInterface 	  $scopeConfig
+	 * @param \Magento\Payment\Model\Method\Logger 					  $logger
+	 * @param \Magento\Framework\Module\ModuleListInterface 		  $moduleList
+	 * @param \Magento\Framework\Stdlib\DateTime\TimezoneInterface    $localeDate
+	 * @param \Magento\Sales\Model\OrderFactory 					  $orderFactory
+	 * @param \Magento\Framework\Encryption\EncryptorInterface 		  $encryptor
+	 * @param \Magento\Framework\UrlInterface 						  $urlBuilder
+	 * @param \Magento\Framework\Model\ResourceModel\AbstractResource $resourceCollection
+	 * @param \Magento\Framework\Data\Collection\AbstractDb 		  $resourceCollection
+	 * @param array 												  $data
+	 */
 	public function __construct(
 		Context $context,
 		Registry $registry,
@@ -100,9 +111,9 @@ protected $_canRefundInvoicePartial = true;
 	}
 
 	/**
-	 * PGet form fields and prepare the data to be sent
+	 * Return the transaction related fields required for the sKash API call
 	 *
-	 * @param object $order
+	 * @param object $order Order object
 	 *
 	 * @return array
 	 */
@@ -148,6 +159,13 @@ protected $_canRefundInvoicePartial = true;
 		);
 	}
 
+	/**
+	 * Make an API call to obtain the sKash QR
+	 *
+	 * @param array $requestFields Transaction related fields
+	 *
+	 * @return array
+	 */
 	public function getTransactionQR($requestFields)
 	{
 		// @todo: Check https://devdocs.magento.com/guides/v2.3/get-started/gs-web-api-request.html

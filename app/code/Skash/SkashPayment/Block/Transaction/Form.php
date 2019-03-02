@@ -5,19 +5,28 @@
  */
 namespace Skash\SkashPayment\Block\Transaction;
 
-use Magento\Customer\Helper\Session\CurrentCustomer;
-use Magento\Framework\Locale\ResolverInterface;
-use Magento\Framework\View\Element\Template;
-use Magento\Framework\View\Element\Template\Context;
-use Magento\Payment\Helper\Data;
-use Magento\Sales\Model\OrderFactory;
-use Magento\Checkout\Model\Session;
-use Magento\Paypal\Model\Config;
-use Magento\Paypal\Model\ConfigFactory;
-use Magento\Paypal\Model\Express\Checkout;
+use \Magento\Customer\Helper\Session\CurrentCustomer;
+use \Magento\Framework\Locale\ResolverInterface;
+use \Magento\Framework\View\Element\Template;
+use \Magento\Framework\View\Element\Template\Context;
+use \Magento\Sales\Model\OrderFactory;
+use \Magento\Checkout\Model\Session;
+use \Magento\Paypal\Model\Config;
+use \Magento\Paypal\Model\ConfigFactory;
+use \Magento\Paypal\Model\Express\Checkout;
+use \Skash\SkashPayment\Model\Skash;
 
+/**
+ * Skash Transaction Form Block
+ */
 class Form extends \Magento\Payment\Block\Form
 {
+
+    public $PAYMENT_STATUS_SUCCESS = Skash::PAYMENT_STATUS_SUCCESS;
+
+    public $PAYMENT_STATUS_ERROR = Skash::PAYMENT_STATUS_ERROR;
+
+    public $PAYMENT_STATUS_INVALID_DATA = Skash::PAYMENT_STATUS_INVALID_DATA;
 
     /**
      * Order object
@@ -25,13 +34,6 @@ class Form extends \Magento\Payment\Block\Form
      * @var \Magento\Sales\Model\Order
      */
     protected $_order;
-
-    /**
-     * Paypal data
-     *
-     * @var Data
-     */
-    protected $_paymentData;
 
     /**
      * @var OrderFactory
@@ -42,11 +44,6 @@ class Form extends \Magento\Payment\Block\Form
      * @var ResolverInterface
      */
     protected $_localeResolver;
-
-    /**
-     * @var null
-     */
-    protected $_config;
 
     /**
      * @var bool
@@ -65,57 +62,34 @@ class Form extends \Magento\Payment\Block\Form
      protected $_checkoutSession;
 
     /**
-     * @param Context $context
-     * @param ConfigFactory $paypalConfigFactory
-     * @param ResolverInterface $localeResolver
-     * @param Data $paymentData
-     * @param CurrentCustomer $currentCustomer
-     * @param array $data
+     * @var \Skash\SkashPayment\Model\Skash
+     */
+     protected $_skashPaymentMethod;
+
+    /**
+     * @param \Magento\Framework\View\Element\Template\Context $context
+     * @param \Magento\Paypal\Model\ConfigFactory              $paypalConfigFactory
+     * @param \Magento\Framework\Locale\ResolverInterface      $localeResolver
+     * @param \Magento\Customer\Helper\Session\CurrentCustomer $currentCustomer
+     * @param \Skash\SkashPayment\Model\Skash                  $skash
+     * @param array                                            $data
      */
     public function __construct(
         Context $context,
         OrderFactory $orderFactory,
         ResolverInterface $localeResolver,
-        Data $paymentData,
         Session $checkoutSession,
         CurrentCustomer $currentCustomer,
+        Skash $skash,
         array $data = []
     ) {
-        $this->_paymentData = $paymentData;
         $this->_orderFactory = $orderFactory;
         $this->_checkoutSession = $checkoutSession;
         $this->_localeResolver = $localeResolver;
-        $this->_config = null;
         $this->_isScopePrivate = true;
         $this->currentCustomer = $currentCustomer;
         parent::__construct($context, $data);
-    }
-
-        /**
-     * Set payment method code
-     *
-     * @return void
-     */
-    protected function _construct()
-    {
-        parent::_construct();
-        $this->_paymentMethodCode = \Skash\SkashPayment\Model\Skash::METHOD_SKASH;
-    }
-
-    public function getRequestFields()
-    {
-    	$this->_order = $this->_getOrder();
-    	return $this->_paymentData->getMethodInstance($this->_paymentMethodCode)->getRequestFields($this->_order);
-    }
-
-    /**
-     * Get frontend checkout session object
-     *
-     * @return \Magento\Checkout\Model\Session
-     */
-    protected function _getCheckout()
-    {
-        return $this->_checkoutSession;
+        $this->_skashPaymentMethod = $skash;
     }
 
     /**
@@ -133,25 +107,14 @@ class Form extends \Magento\Payment\Block\Form
     }
 
     /**
-     * Get frame action URL
+     * Return the transaction related fields required for the sKash API call
      *
-     * @return string
+     * @return array
      */
-    public function getFrameActionUrl()
+    public function getRequestFields()
     {
-        return $this->getUrl('paypal/payflow/form', ['_secure' => true]);
+    	return $this->_skashPaymentMethod->getRequestFields($this->_getOrder());
     }
-
-    /**
-     * Get payflow transaction URL
-     *
-     * @return string
-     */
-    public function getTransactionUrl()
-    {
-    	return $this->_paymentData->getMethodInstance($this->_paymentMethodCode)->getTransactionUrl();
-    }
-
 
     /**
      * Get transaction QR
@@ -160,7 +123,45 @@ class Form extends \Magento\Payment\Block\Form
      */
     public function getTransactionQR()
     {
-        return $this->_paymentData->getMethodInstance($this->_paymentMethodCode)->getTransactionQR($this->getRequestFields());
+        return $this->_skashPaymentMethod->getTransactionQR($this->getRequestFields());
+    }
+
+    /**
+     * Get frontend checkout session object
+     *
+     * @return \Magento\Checkout\Model\Session
+     */
+    protected function _getCheckout()
+    {
+        return $this->_checkoutSession;
+    }
+
+    /**
+     * Get the checkout URL
+     *
+     * @return string
+     */
+    public function getCheckoutUrl()
+    {
+        return $this->getUrl('checkout', ['_secure' => true]);
+    }
+
+    /**
+     * Get the homepage url
+     *
+     * @return string
+     */
+    public function getContinueShoppingUrl()
+    {
+        $url = $this->getData('continue_shopping_url');
+        if ($url === null) {
+            $url = $this->_checkoutSession->getContinueShoppingUrl(true);
+            if (!$url) {
+                $url = $this->_urlBuilder->getUrl();
+            }
+            $this->setData('continue_shopping_url', $url);
+        }
+        return $url;
     }
 
 }

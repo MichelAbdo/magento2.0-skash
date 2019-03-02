@@ -3,36 +3,48 @@
  * Copyright © 2013-2017 Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
-?>
-<html>
-	<head>
-		<!-- @todo: add magento header and footer -->
-	</head>
-	<body>
-		<?php
-		$qrResponse = $block->getTransactionQR();
-		if (isset($qrResponse['error'])) {
-			echo $qrResponse['error'];
+
+$qrResponse = $block->getTransactionQR();
+
+if (isset($qrResponse['error'])) {
+	?>
+	<div>
+		<p><?php echo __('An error occured, try again or choose another payment method.'); ?></p>
+		<p>
+			<?php echo __('Click <a href="%1">here</a> to go back to checkout page.',
+	            $block->escapeUrl($block->getCheckoutUrl())); ?>
+		</p>
+		<p>
+			<?php echo __('Or click <a href="%1">here</a> to continue shopping.',
+				$block->escapeUrl($block->getContinueShoppingUrl())); ?>
+		</p>
+	</div>
+	<?php
+} else {
+	$tranID = $qrResponse['TranID'];
+	$pictureURL = $qrResponse['PictureURL'];
+	$returnText = $qrResponse['ReturnText'];
+	switch ($qrResponse['Flag']) {
+		case $block->PAYMENT_STATUS_ERROR:
+		case $block->PAYMENT_STATUS_INVALID_DATA:
+			echo __($returnText);
 			//@todo show back button with a message
-		} else {
-			$tranID = $qrResponse['TranID'];
-			$pictureURL = $qrResponse['PictureURL'];
-			$returnText = $qrResponse['ReturnText'];
-			switch ($qrResponse['Flag']) {
-				case -1:
-				case 10:
-					echo __($returnText);
-					//@todo show back button with a message
-					break;
-				case 2:
-					echo __("Your order has been placed! Scan the QR with your sKash app to complete the payment.");
-					echo "<img src='$pictureURL' alt='sKash QR code' title='sKash QR code'/>";
-					break;
-			}
-		}
-		?>
-		<script>
-		    // document.getElementById('skash_form').submit();
-		</script>
-	</body>
-</html>
+			break;
+		case $block->PAYMENT_STATUS_SUCCESS:
+			?>
+			<div>
+				<p>
+					<?php echo __("Your order has been placed! Scan the QR with your sKash app to complete the payment."); ?>
+				</p>
+				<p>
+					<?php echo "<img src='$pictureURL' alt='sKash QR code' title='sKash QR code'/>"; ?>
+				</p>
+			</div>
+			<?php
+			break;
+	}
+}
+?>
+<script>
+    // document.getElementById('skash_form').submit();
+</script>
