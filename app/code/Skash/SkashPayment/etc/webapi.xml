@@ -11,4 +11,10 @@
  			<resource ref="anonymous"/>
  		</resources>
  	</route>
+	<route url="/V1/api/skash/callback/status_changed" method="GET">
+		<service class="Skash\SkashPayment\Api\Skash\CallbackInterface" method="status_changed"/>
+		<resources>
+			<resource ref="anonymous"/>
+		</resources>
+	</route>
 </routes>

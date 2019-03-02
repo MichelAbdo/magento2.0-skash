@@ -8,6 +8,7 @@ namespace Skash\SkashPayment\Model;
 
 use Skash\SkashPayment\Api\Skash\CallbackInterface;
 
+use \Magento\Sales\Model\Order;
 use \Magento\Framework\Model\Context;
 use \Magento\Sales\Model\OrderFactory;
 use \Skash\SkashPayment\Model\Skash as SKashFactory;
@@ -186,11 +187,13 @@ class Callback implements CallbackInterface
 
 		// Rejected Order
 		if ($status == self::PAYMENT_STATUS_REJECTED) {
+			$order->setState(Order::STATE_CANCELED);
+			$order->setStatus(Order::STATE_CANCELED);
 			$message = __('Skash Transaction Rejected.');
 			$this->_orderManagement->cancel(
 				$order->getEntityId()
 			);
-			$order->addStatusHistoryComment($message, "canceled")
+			$order->addStatusHistoryComment($message, "canceled / rejected")
 				  ->setIsCustomerNotified(false)->save();
 			return [[
 				'status' => 'failure',
@@ -198,7 +201,7 @@ class Callback implements CallbackInterface
 			]];
 		}
 
-		if ($order->getStatus() == \Magento\Sales\Model\Order::STATE_PROCESSING) {
+		if ($order->getStatus() !== Order::STATE_PENDING_PAYMENT) {
 			// @todo: check why the json body is returned empty
 			// https://www.brainacts.com/blog/how-to-return-a-json-response-from-a-controller-in-magento-2
 			/** @var \Magento\Framework\Controller\Result\Json $resultJson */
@@ -248,11 +251,11 @@ class Callback implements CallbackInterface
 				$invoice->getOrder()
 			);
 			$transactionSave->save();
-			$order->setState(\Magento\Sales\Model\Order::STATE_PROCESSING);
-			$order->setStatus(\Magento\Sales\Model\Order::STATE_PROCESSING);
+			$order->setState(Order::STATE_PROCESSING);
+			$order->setStatus(Order::STATE_PROCESSING);
 			if ($invoice && !$order->getEmailSent()) {
 				$this->_orderSender->send($order);
-				$order->addStatusToHistory(\Magento\Sales\Model\Order::STATE_PROCESSING, null, true);
+				$order->addStatusToHistory(Order::STATE_PROCESSING, null, true);
 			}
 			$order = $order->save();
 		}
@@ -267,7 +270,9 @@ class Callback implements CallbackInterface
 				'Timestamp' =>  $orderTimestamp
 			)
 		]);
-		$transaction = $payment->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE);
+		$transaction = $payment->addTransaction(
+			\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE
+		);
 		$payment->addTransactionCommentsToOrder(
 			$transaction,
 			$message
@@ -281,6 +286,29 @@ class Callback implements CallbackInterface
 			'message' => 'Transaction made successfully.'
 		]];
 	}
+
+    /**
+     * Checks if the order status changed
+     *
+     * @api
+     *
+     * @param string $transaction_id Transaction Id
+     *
+     * @return string
+     */
+     public function status_changed($order_id)
+     {
+		$order = $this->_orderFactory->create()->loadByIncrementId(
+			$order_id
+		);
+		if (!$order || empty($order)) {
+			return [[
+				'status' => 'failure',
+				'message' =>  "Order not found for transaction '$transactionId'"
+			]];
+		}
+        return $order->getState() !== \Magento\Sales\Model\Order::STATE_PENDING_PAYMENT;
+     }
 
 	/**
 	 * Check if the status of the order is valid

@@ -31,4 +31,15 @@ interface CallbackInterface
           $currency,
           $secure_hash
      );
+
+    /**
+     * Checks if the order status changed
+     *
+     * @api
+     *
+     * @param string $transaction_id Transaction Id
+     *
+     * @return string
+     */
+     public function status_changed($order_id);
 }
