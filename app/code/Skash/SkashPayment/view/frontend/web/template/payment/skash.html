@@ -11,7 +11,7 @@
                data-bind="attr: {'id': getCode()}, value: getCode(), checked: isChecked, click: selectPaymentMethod, visible: isRadioButtonVisible()"/>
         <label data-bind="attr: {'for': getCode()}" class="label">
          <!-- sKash Logo -->
-            <img width="175px" src="../pub/media/skash/skash-ghana-powered.png"
+            <img width="175px" src="../pub/media/skash/skash.png"
                  data-bind="text: getTitle()"
                  class="payment-icon"><span data-bind="text: getTitle()"></span></img>
          <!--<span data-bind="text: getTitle()"></span> -->
@@ -23,7 +23,7 @@
         <!--/ko-->
         <fieldset class="fieldset" data-bind='attr: {id: "payment_form_" + getCode()}'>
             <div class="payment-method-note">
-                <!-- ko i18n: 'You will be redirected to the sKash website when you place an order.' --><!-- /ko -->
+                <!-- ko i18n: 'You will be redirected to the sKash QR page to complete the transaction.' --><!-- /ko -->
             </div>
         </fieldset>
         <div class="payment-method-billing-address">
