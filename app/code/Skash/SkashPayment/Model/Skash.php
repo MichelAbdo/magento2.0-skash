@@ -238,8 +238,7 @@ class Skash extends AbstractMethod
 	 */
 	public function getQRTransactionUrl()
 	{
-		//@todo: check if the url is fixed or needs to be dynamic
-		return "https://stage.elbarid.com/OnlinePayment/PayQR";
+		return $this->_encryptor->decrypt($this->getConfigData('qr_api'));
 	}
 
 	/**
