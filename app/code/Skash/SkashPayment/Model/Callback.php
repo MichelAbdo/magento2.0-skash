@@ -294,20 +294,20 @@ class Callback implements CallbackInterface
      *
      * @param string $transaction_id Transaction Id
      *
-     * @return string
+     * @return mixed[]
      */
      public function status_changed($order_id)
      {
 		$order = $this->_orderFactory->create()->loadByIncrementId(
 			$order_id
 		);
-		if (!$order || empty($order)) {
+		if (!$order || empty($order) || empty($order->getState())) {
 			return [[
-				'status' => 'failure',
-				'message' =>  "Order not found for transaction '$transactionId'"
+				'status' => 'error',
+				'message' =>  'Invalid order.'
 			]];
 		}
-        return $order->getState() !== \Magento\Sales\Model\Order::STATE_PENDING_PAYMENT;
+        return $order->getState() !== Order::STATE_PENDING_PAYMENT;
      }
 
 	/**

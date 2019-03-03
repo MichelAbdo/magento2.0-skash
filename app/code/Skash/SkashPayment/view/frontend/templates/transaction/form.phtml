@@ -4,86 +4,105 @@
  * See COPYING.txt for license details.
  */
 
-$qrResponse = $block->getTransactionQR();
+// @todo: make a check: if status other that pending_payment, redirect to homepage
 
-if (isset($qrResponse['error'])) {
+$qrResponse = $block->getTransactionQR();
+if (isset($qrResponse['error'])
+	|| (isset($qrResponse['Flag']) && $qrResponse['Flag'] == $block->PAYMENT_STATUS_ERROR)
+	|| (isset($qrResponse['Flag']) && $qrResponse['Flag'] == $block->PAYMENT_STATUS_INVALID_DATA)
+) {
 	?>
-	<div>
-		<h2>
-			<?php echo __("An error occured!"); ?>
-		</h2>
-		<p><?php echo __('Try again or choose another payment method.'); ?></p>
-		<p>
-			<?php echo __('Click <a href="%1">here</a> to go back to checkout page.',
-	            $block->escapeUrl($block->getCheckoutUrl())); ?>
-		</p>
-		<p>
-			<?php echo __('Or click <a href="%1">here</a> to continue shopping.',
-				$block->escapeUrl($block->getContinueShoppingUrl())); ?>
-		</p>
+	<div class='skash-notifications'>
+		<div class='messages'>
+			<div class='message-error error message' data-ui-id='message-error'>
+				<div><?php echo __('An error occured while creating the sKash transaction!'); ?></div>
+			</div>
+		</div>
 	</div>
+	<h2><?php echo __('Try again or choose another payment method.'); ?></h2>
+	<p>
+		<?php echo __('Click <a href="%1">here</a> to go back to checkout page.',
+				$block->escapeUrl($block->getCheckoutUrl())); ?>
+	</h2>
+	<p>
+		<?php echo __('Or click <a href="%1">here</a> to continue shopping.',
+			$block->escapeUrl($block->getContinueShoppingUrl())); ?>
+	</p>
 	<?php
 } else {
 	$tranID = $qrResponse['TranID'];
 	$pictureURL = $qrResponse['PictureURL'];
-	$returnText = $qrResponse['ReturnText'];
-	switch ($qrResponse['Flag']) {
-		case $block->PAYMENT_STATUS_ERROR:
-		case $block->PAYMENT_STATUS_INVALID_DATA:
-			echo __($returnText);
-			//@todo show back button with a message
-			break;
-		case $block->PAYMENT_STATUS_SUCCESS:
-			?>
-			<div id="skash_qr_response" data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_changed?order_id=1' . $tranID; ?>">
-				<h2>
-					<?php echo __("Your order has been placed!"); ?>
-				</h2>
-				<p>
-					<?php echo __("Scan the QR with your sKash app to complete the payment."); ?>
-				</p>
-				<p>
-					<?php echo "<img id='skash_qr_image' src='$pictureURL' alt='sKash QR code' title='sKash QR code'/>"; ?>
-				</p>
-			</div>
-			<?php
-			break;
-	}
+	$returnText = $qrResponse['ReturnText']; ?>
+	<div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_changed?order_id=' . $tranID; ?>">
+		<h2 class='skash-title'>
+			<?php echo __("Your order has been placed!"); ?>
+		</h2>
+		<div class='skash-notifications'></div>
+		<h3>
+			<?php echo __('Scan the QR with your sKash app to complete the payment.'); ?>
+		</h3>
+		<div class='skash-qr-image'>
+			<?php echo "<img src='$pictureURL' alt='sKash QR code' title='sKash QR code'/>"; ?>
+		</div>
+		<div class='skash-buttons'>
+			<span class='skash-back-to-checout'>
+				<?php echo __('Click <a href="%1">here</a> to go back to checkout page.',
+					$block->escapeUrl($block->getCheckoutUrl())); ?>
+			</span>
+			<span class='skash-continue-shopping hidden'>
+				<?php echo __('Click <a href="%1">here</a> to continue shopping.',
+				$block->escapeUrl($block->getContinueShoppingUrl())); ?>
+			</span>
+		</div>
+	</div>
+	<?php
 }
 ?>
 <script>
 	// @todo: move js to separate file https://magently.com/blog/introduction-knockout-js-magento-2/
+	// https://devdocs.magento.com/guides/v2.3/javascript-dev-guide/javascript/js_init.html
 require([
-    'jquery'  // the alias for "mage/accordion"
+	'jquery'
 ], function ($) {
-
-    $(function () { // to ensure that code evaluates on page load
-		console.log('here -----------------');
-		var url = $('#skash_qr_response').data('status-check');
-		console.log(url);
-        $(document).ready(function() {
-            $.ajax({
-                url: url,
-                type: "GET",
-                dataType: 'json'
-            }).done(function (data) {
-				console.log('success -----------------');
-				console.log(data);
-                // $('#test').removeClass('hideme');
-                // var html = template('#test', {posts:data});
-                // $('#test').html(html);
-            });
-        });
-    });
-
+	if ($('#skash_qr_response .skash-qr-image img').length > 0) {
+		var statusCheckInterval = setInterval(function() {
+$(function () {
+	$(document).ready(function() {
+		// Check if the status is changed from
+		$.ajax({
+			url: $('#skash_qr_response').data('status-check'),
+			type: "GET",
+			dataType: 'json'
+		}).done(function (data) {
+			if ($.isArray(data) && 'status' in data[0] && data[0].status == 'error') {
+				clearInterval(statusCheckInterval);
+				$('#skash_qr_response .skash-notifications').html(
+					'<div class="page messages"><div data-placeholder="messages"></div><div><div class="messages"><div class="message-error error message" data-ui-id="message-error"><div>An error occured while verifing the order.</div></div></div></div></div>'
+				);
+			} else if (data) {
+				clearInterval(statusCheckInterval);
+				$('#skash_qr_response .skash-notifications').html(
+					'<div class="page messages"><div data-placeholder="messages"></div><div><div class="messages"><div class="message-success success message" data-ui-id="message-success"><div>The transaction is successfully done</div></div></div></div></div>'
+				);
+				$('#skash_qr_response .skash-back-to-checout').find().addClass('hidden');
+				$('#skash_qr_response .skash-continue-shopping').find().removeClass('hidden');
+			}
+		});
+	});
+});
+		}, 3000);
+	}
 });
 </script>
 
 <style>
 @media (min-width: 978px) {
-	#skash_qr_image {
+	.skash-qr-image img {
 		max-width: 50%;
 		height: auto;
+	}
+	#skash_qr_response .hidden {
+		display: none;
 	}
 }
 </style>

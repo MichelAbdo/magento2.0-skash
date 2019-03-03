@@ -39,7 +39,7 @@ interface CallbackInterface
      *
      * @param string $transaction_id Transaction Id
      *
-     * @return string
+     * @return mixed[]
      */
      public function status_changed($order_id);
 }
