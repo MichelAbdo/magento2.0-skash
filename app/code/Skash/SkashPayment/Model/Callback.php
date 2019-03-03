@@ -162,6 +162,7 @@ class Callback implements CallbackInterface
 			|| empty($amount) || empty($currency)
 			|| empty($secure_hash)
 		) {
+			$this->_logger->debug("Callback | Error: Order $transaction_id Invalid / empty params");
 			return [[
 				'status' => 'error',
 				'message' => 'Invalid / Empty Transaction Params.'
@@ -170,6 +171,7 @@ class Callback implements CallbackInterface
 
 		// Validate the status' value
 		if (!$this->is_valid_status($status)) {
+			$this->_logger->debug("Callback | Error: Order $transaction_id invalid status $status");
 			return [[
 				'status' => 'error',
 				'message' => 'Invalid Transaction Status'
@@ -181,6 +183,7 @@ class Callback implements CallbackInterface
 			$transaction_id
 		);
 		if (!$order || empty($order) || !$order->getRealOrderId()) {
+			$this->_logger->debug("Callback | Error: Order $transaction_id not found");
 			return [[
 				'status' => 'error',
 				'message' =>  "Order not found for transaction '$transaction_id'"
@@ -197,6 +200,7 @@ class Callback implements CallbackInterface
 			);
 			$order->addStatusHistoryComment($message, "canceled / rejected")
 				  ->setIsCustomerNotified(false)->save();
+			$this->_logger->debug("Callback | Error: Order $transaction_id rejected");
 			return [[
 				'status' => 'rejected',
 				'message' => $message
@@ -212,6 +216,7 @@ class Callback implements CallbackInterface
 			// 	'status' => 'error',
 			// 	'message' => 'Order already Updated.'
 			// ));
+			$this->_logger->debug("Callback | Error: Order $transaction_id already updated");
 			return [[
 				'status' => __('error'),
 				'message' => __('Order already Updated.')
@@ -226,8 +231,7 @@ class Callback implements CallbackInterface
 		$orderHashData = $orderId . $status . $orderTimestamp . $merchantId . $orderAmount . $orderCurrency;
 		$orderSecureHash = base64_encode(hash('sha512', $orderHashData, true));
 		if ($secure_hash != $orderSecureHash) {
-			$this->_logger->info('Invalid Transaction Params.');
-			$this->_logger->debug('Invalid Transaction Params.');
+			$this->_logger->debug('Callback | Error: Hash does not match for order ' . $orderId);
 			return json_encode(array(
 				'status' => __('error'),
 				'message' => __('Invalid Transaction Params.')
@@ -274,6 +278,7 @@ class Callback implements CallbackInterface
 		$payment->save();
 		$order->save();
 
+		$this->_logger->debug("Callback | Success: Order $orderId Accepted");
 		return [[
 			'status' => 'success',
 			'message' => 'Transaction made successfully.'
@@ -295,6 +300,7 @@ class Callback implements CallbackInterface
 			$order_id
 		);
 		if (!$order || empty($order) || empty($order->getState())) {
+			$this->_logger->debug("Status Check | Error: Invalid Order Id $order_id");
 			return [[
 				'status' => 'error',
 				'message' =>  'Invalid order.'
