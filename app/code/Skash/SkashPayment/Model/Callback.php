@@ -21,7 +21,6 @@ use \Magento\Framework\Encryption\EncryptorInterface;
 use \Magento\Framework\App\Config\ScopeConfigInterface;
 use \Magento\Framework\DB\Transaction as DbTransaction;
 use \Magento\Framework\Controller\Result\JsonFactory;
-use \Psr\Log\LoggerInterface;
 
 class Callback implements CallbackInterface
 {
@@ -102,7 +101,6 @@ class Callback implements CallbackInterface
 	 * @param \Magento\Framework\App\Config\ScopeConfigInterface 		$scopeConfig
 	 * @param \Magento\Framework\DB\Transaction 						$resultJsonFactory
 	 * @param \Magento\Framework\Controller\Result\JsonFactory 			$dbTransaction
-	 * @param \Psr\Log\LoggerInterface 									$logger
 	 */
 	public function __construct(
 		Context $context,
@@ -116,8 +114,7 @@ class Callback implements CallbackInterface
 		EncryptorInterface $encryptor,
 		ScopeConfigInterface $scopeConfig,
 		JsonFactory $resultJsonFactory,
-		DbTransaction $dbTransaction,
-		LoggerInterface $logger
+		DbTransaction $dbTransaction
 	) {
 		$this->_orderFactory = $orderFactory;
 		$this->_orderManagement = $orderManagement;
@@ -125,7 +122,7 @@ class Callback implements CallbackInterface
 		$this->_invoiceService = $invoiceService;
 		$this->_invoiceSender = $invoiceSender;
 		$this->_transaction = $dbTransaction;
-		$this->_logger = $logger;
+		$this->_logger = $context->getLogger();
 		$this->_sKashFactory = $sKashFactory;
 		$this->_checkoutHelper = $checkoutHelper;
 		$this->_encryptor = $encryptor;
