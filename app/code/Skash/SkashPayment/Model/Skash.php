@@ -36,6 +36,18 @@ class Skash extends AbstractMethod
 	const PAYMENT_STATUS_INVALID_DATA = 10;
 
 	/**
+	 * skash Payment Code
+	 */
+	const PAYMENT_CODE = 'skash';
+
+	/**
+	 * Payment code
+	 *
+	 * @var string
+	 */
+	protected $_code = self::PAYMENT_CODE;
+
+	/**
 	 * Availability option
 	 *
 	 * @var bool
@@ -248,11 +260,6 @@ class Skash extends AbstractMethod
 	 */
 	public function getDeeplinkUrl()
 	{
-		//@todo: check if the url is fixed or needs to be dynamic
-		$testMode = $testMode === null ? $this->getConfigData("test") : (bool)$testMode;
-		if ($testMode) {
-			return "https://stage.elbarid.com/OnlinePayment/PayQR";
-		}
 		return "https://stage.elbarid.com/OnlinePayment/PayQR";
 	}
 
