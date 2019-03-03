@@ -10,7 +10,7 @@
 namespace Skash\SkashPayment\Controller\Checkout;
 
 /**
- * Class Start
+ * Skash Transaction Controller
  */
 class Transaction extends \Magento\Framework\App\Action\Action
 {
@@ -66,24 +66,43 @@ class Transaction extends \Magento\Framework\App\Action\Action
      */
     public function execute()
     {
-    	if (!$this->_objectManager->get('Magento\Checkout\Model\Session\SuccessValidator')->isValid()) {
+        if (!$this->_objectManager->get('Magento\Checkout\Model\Session\SuccessValidator')->isValid()) {
             return $this->resultRedirectFactory->create()->setPath('checkout/cart');
         }
 
         if ($this->_checkoutSession->getLastRealOrderId()) {
-    		$order = $this->_orderFactory->create()->loadByIncrementId(
+            $order = $this->_orderFactory->create()->loadByIncrementId(
                 $this->_checkoutSession->getLastRealOrderId()
             );
 
-    		if ($order->getIncrementId()) {
-				$message = __("Getting sKash QR.");
-				$order->addStatusHistoryComment(
-                    $message,
-                    $order->getStatus()
-                )->setIsCustomerNotified(false)->save();
-			}
-    	}
-    	$this->_view->loadLayout(false)->renderLayout();
+            if ($order->getIncrementId()) {
+
+                $orderState = $order->getState();
+                // If the order status was updated, !== pending_payment, redirect to homepage
+                if ($orderState !== Order::STATE_PENDING_PAYMENT) {
+                    switch ($orderState) {
+                        case Order::STATE_CANCELED:
+                            $orderStateMsg = 'rejected';
+                            break;
+                        case Order::STATE_PROCESSING:
+                            $orderStateMsg = 'accepted';
+                            break;
+                        default:
+                            $orderStateMsg = 'updated';
+                            break;
+                    }
+                    $this->messageManager->addNotice(__("Order already $orderStateMsg Check your order history."));
+                    return $this->resultRedirectFactory->create()->setPath('/');
+                }
+
+                $order->addStatusHistoryComment(
+                     __("Getting sKash QR."),
+                     $order->getStatus()
+                 )->setIsCustomerNotified(false)->save();
+            }
+        }
+
+        $this->_view->loadLayout(false)->renderLayout();
     }
 
     /**
