@@ -161,7 +161,7 @@ class Callback implements CallbackInterface
 			|| empty($secure_hash)
 		) {
 			return [[
-				'status' => 'failure',
+				'status' => 'error',
 				'message' => 'Invalid / Empty Transaction Params.'
 			]];
 		}
@@ -169,7 +169,7 @@ class Callback implements CallbackInterface
 		// Validate the status' value
 		if (!$this->is_valid_status($status)) {
 			return [[
-				'status' => 'failure',
+				'status' => 'error',
 				'message' => 'Invalid Transaction Status'
 			]];
 		}
@@ -180,7 +180,7 @@ class Callback implements CallbackInterface
 		);
 		if (!$order || empty($order)) {
 			return [[
-				'status' => 'failure',
+				'status' => 'error',
 				'message' =>  "Order not found for transaction '$transaction_id'"
 			]];
 		}
@@ -196,7 +196,7 @@ class Callback implements CallbackInterface
 			$order->addStatusHistoryComment($message, "canceled / rejected")
 				  ->setIsCustomerNotified(false)->save();
 			return [[
-				'status' => 'failure',
+				'status' => 'rejected',
 				'message' => $message
 			]];
 		}
@@ -207,11 +207,11 @@ class Callback implements CallbackInterface
 			/** @var \Magento\Framework\Controller\Result\Json $resultJson */
 			// $result = $this->_resultJsonFactory->create();
 			// return $result->setData(array(
-			// 	'status' => 'failure',
+			// 	'status' => 'error',
 			// 	'message' => 'Order already Updated.'
 			// ));
 			return [[
-				'status' => __('failure'),
+				'status' => __('error'),
 				'message' => __('Order already Updated.')
 			]];
 		}
@@ -226,7 +226,7 @@ class Callback implements CallbackInterface
 
 		if ($secure_hash != $orderSecureHash) {
 			return json_encode(array(
-				'status' => __('failure'),
+				'status' => __('error'),
 				'message' => __('Invalid Transaction Params.')
 			));
 		}
@@ -294,9 +294,9 @@ class Callback implements CallbackInterface
      *
      * @param string $transaction_id Transaction Id
      *
-     * @return mixed[]
+     * @return array[]
      */
-     public function status_changed($order_id)
+     public function status_check($order_id)
      {
 		$order = $this->_orderFactory->create()->loadByIncrementId(
 			$order_id
@@ -307,7 +307,27 @@ class Callback implements CallbackInterface
 				'message' =>  'Invalid order.'
 			]];
 		}
-        return $order->getState() !== Order::STATE_PENDING_PAYMENT;
+
+		switch ($order->getState()) {
+			case Order::STATE_CANCELED:
+				return [[
+					'status' => 'changed',
+					'message' =>  'Rejected'
+				]];
+			case Order::STATE_PROCESSING:
+				return [[
+					'status' => 'changed',
+					'message' =>  'Accepted'
+				]];
+				break;
+			case Order::STATE_PENDING_PAYMENT:
+			default:
+				return [[
+					'status' => 'not-changed',
+					'message' =>  'Pending'
+				]];
+				break;
+		}
      }
 
 	/**
