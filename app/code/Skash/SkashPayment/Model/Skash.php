@@ -29,10 +29,11 @@ use \Magento\Framework\Data\Collection\AbstractDb;
 class Skash extends AbstractMethod
 {
 
+	/**
+	 * Skash payment status numbers
+	 */
 	const PAYMENT_STATUS_SUCCESS = 2;
-
 	const PAYMENT_STATUS_ERROR = -1;
-
 	const PAYMENT_STATUS_INVALID_DATA = 10;
 
 	/**

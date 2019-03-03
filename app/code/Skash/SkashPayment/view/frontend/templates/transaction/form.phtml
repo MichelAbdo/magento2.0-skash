@@ -4,9 +4,11 @@
  * See COPYING.txt for license details.
  */
 
-// @todo: make a check: if status other that pending_payment, redirect to homepage
-
+// $fields = $block->getRequestFields();
+// var_dump($fields);
+$orderId = $block->getOrderID();
 $qrResponse = $block->getTransactionQR();
+
 if (isset($qrResponse['error'])
 	|| (isset($qrResponse['Flag']) && $qrResponse['Flag'] == $block->PAYMENT_STATUS_ERROR)
 	|| (isset($qrResponse['Flag']) && $qrResponse['Flag'] == $block->PAYMENT_STATUS_INVALID_DATA)
@@ -39,10 +41,9 @@ if (isset($qrResponse['error'])
 	</p>
 	<?php
 } else {
-	$tranID = $qrResponse['TranID'];
 	$pictureURL = $qrResponse['PictureURL'];
-	$returnText = $qrResponse['ReturnText']; ?>
-	<div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_check?order_id=' . $tranID; ?>">
+	?>
+	<div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_check?order_id=' . $orderId; ?>">
 		<h2 class='skash-title'>
 			<?php echo __("Your order has been placed!"); ?>
 		</h2>
@@ -67,9 +68,8 @@ if (isset($qrResponse['error'])
 	<?php
 }
 ?>
-<script>
-	// @todo: move js to separate file https://magently.com/blog/introduction-knockout-js-magento-2/
-	// https://devdocs.magento.com/guides/v2.3/javascript-dev-guide/javascript/js_init.html
+<script type='text/javascript'>
+// @todo: https://belvg.com/blog/how-to-include-custom-javascript-on-pages-in-magento-2.html
 require([
 	'jquery'
 ], function ($) {
@@ -83,12 +83,7 @@ require([
 						type: "GET",
 						dataType: 'json'
 					}).done(function (data) {
-						if (data[0].status == 'error') {
-							clearInterval(statusCheckInterval);
-							$('#skash_qr_response .skash-notifications').html(
-								'<div class="messages"><div class="message-error error message" data-ui-id="message-error"><div>An error occured while verifing the order.</div></div></div>'
-							);
-						} else if (data[0].status == 'changed') {
+						if (data[0].status == 'changed') {
 							if (data[0].message == 'Accepted') {
 								clearInterval(statusCheckInterval);
 								$('#skash_qr_response .skash-notifications').html(
@@ -97,6 +92,7 @@ require([
 								$('#skash_qr_response .skash-back-to-checout').find().addClass('hidden');
 								$('#skash_qr_response .skash-continue-shopping').find().removeClass('hidden');
 							} else if (data[0].message == 'Rejected') {
+								clearInterval(statusCheckInterval);
 								$('#skash_qr_response .skash-notifications').html(
 									'<div class="messages"><div class="message-warning warning message" data-ui-id="message-warning"><div>The transaction was rejected.</div></div></div>'
 								);

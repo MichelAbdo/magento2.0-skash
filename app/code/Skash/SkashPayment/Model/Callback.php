@@ -21,6 +21,7 @@ use \Magento\Framework\Encryption\EncryptorInterface;
 use \Magento\Framework\App\Config\ScopeConfigInterface;
 use \Magento\Framework\DB\Transaction as DbTransaction;
 use \Magento\Framework\Controller\Result\JsonFactory;
+use \Psr\Log\LoggerInterface;
 
 class Callback implements CallbackInterface
 {
@@ -57,7 +58,7 @@ class Callback implements CallbackInterface
 	/**
 	 * @var \Psr\Log\LoggerInterface
 	 */
-	// protected $_logger;
+	protected $_logger;
 
 	/**
 	 * @var \Skash\SkashPayment\Model\Skash
@@ -89,18 +90,19 @@ class Callback implements CallbackInterface
 	protected $_resultJsonFactory;
 
 	/**
-	 * @param \Magento\Framework\Model\Context $context
-	 * @param \Magento\Sales\Model\OrderFactory $orderFactory
-	 * @param \Skash\SkashPayment\Model\Skash $sKashFactory
-	 * @param \Magento\Paypal\Helper\Checkout $checkoutHelper
-	 * @param \Magento\Sales\Api\OrderManagementInterface $orderManagement
-	 * @param \Magento\Sales\Model\Service\InvoiceService $invoiceService
-	 * @param \Magento\Sales\Model\Order\Email\Sender\OrderSende $orderSender
-	 * @param \Magento\Sales\Model\Order\Email\Sender\InvoiceSenderr $invoiceSender
-	 * @param \Magento\Framework\Encryption\EncryptorInterface $encryptor
-	 * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
-	 * @param \Magento\Framework\DB\Transaction $resultJsonFactory
-	 * @param \Magento\Framework\Controller\Result\JsonFactory $dbTransaction
+	 * @param \Magento\Framework\Model\Context 							$context
+	 * @param \Magento\Sales\Model\OrderFactory 						$orderFactory
+	 * @param \Skash\SkashPayment\Model\Skash 							$sKashFactory
+	 * @param \Magento\Paypal\Helper\Checkout 							$checkoutHelper
+	 * @param \Magento\Sales\Api\OrderManagementInterface 				$orderManagement
+	 * @param \Magento\Sales\Model\Service\InvoiceService 				$invoiceService
+	 * @param \Magento\Sales\Model\Order\Email\Sender\OrderSende 		$orderSender
+	 * @param \Magento\Sales\Model\Order\Email\Sender\InvoiceSenderr	$invoiceSender
+	 * @param \Magento\Framework\Encryption\EncryptorInterface 			$encryptor
+	 * @param \Magento\Framework\App\Config\ScopeConfigInterface 		$scopeConfig
+	 * @param \Magento\Framework\DB\Transaction 						$resultJsonFactory
+	 * @param \Magento\Framework\Controller\Result\JsonFactory 			$dbTransaction
+	 * @param \Psr\Log\LoggerInterface 									$logger
 	 */
 	public function __construct(
 		Context $context,
@@ -114,8 +116,8 @@ class Callback implements CallbackInterface
 		EncryptorInterface $encryptor,
 		ScopeConfigInterface $scopeConfig,
 		JsonFactory $resultJsonFactory,
-		DbTransaction $dbTransaction
-		// LoggerInterface $logger
+		DbTransaction $dbTransaction,
+		LoggerInterface $logger
 	) {
 		$this->_orderFactory = $orderFactory;
 		$this->_orderManagement = $orderManagement;
@@ -123,7 +125,7 @@ class Callback implements CallbackInterface
 		$this->_invoiceService = $invoiceService;
 		$this->_invoiceSender = $invoiceSender;
 		$this->_transaction = $dbTransaction;
-		// $this->_logger = $logger;
+		$this->_logger = $logger;
 		$this->_sKashFactory = $sKashFactory;
 		$this->_checkoutHelper = $checkoutHelper;
 		$this->_encryptor = $encryptor;
@@ -178,7 +180,7 @@ class Callback implements CallbackInterface
 		$order = $this->_orderFactory->create()->loadByIncrementId(
 			$transaction_id
 		);
-		if (!$order || empty($order)) {
+		if (!$order || empty($order) || !$order->getRealOrderId()) {
 			return [[
 				'status' => 'error',
 				'message' =>  "Order not found for transaction '$transaction_id'"
@@ -223,23 +225,14 @@ class Callback implements CallbackInterface
 		$orderTimestamp = strtotime($order->getCreatedAt());
 		$orderHashData = $orderId . $status . $orderTimestamp . $merchantId . $orderAmount . $orderCurrency;
 		$orderSecureHash = base64_encode(hash('sha512', $orderHashData, true));
-
 		if ($secure_hash != $orderSecureHash) {
+			$this->_logger->info('Invalid Transaction Params.');
+			$this->_logger->debug('Invalid Transaction Params.');
 			return json_encode(array(
 				'status' => __('error'),
 				'message' => __('Invalid Transaction Params.')
 			));
 		}
-
-		// // var_dump($order->getStatus());die('------');
-		// var_dump($orderId);
-		// var_dump($merchantId );
-		// var_dump($orderAmount);
-		// var_dump($orderCurrency);
-		// var_dump($order->getCreatedAt());
-		// var_dump($orderTimestamp);
-		// var_dump($secure_hash);
-		// var_dump($orderSecureHash);
 
 		if ($order->canInvoice()) {
 			$invoice = $this->_invoiceService->prepareInvoice($order);

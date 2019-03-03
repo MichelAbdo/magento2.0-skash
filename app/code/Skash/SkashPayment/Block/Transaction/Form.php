@@ -107,6 +107,16 @@ class Form extends \Magento\Payment\Block\Form
     }
 
     /**
+     * Get order id
+     *
+     * @return int
+     */
+    public function getOrderID()
+    {
+        return $this->_getCheckout()->getLastRealOrderId();;
+    }
+
+    /**
      * Return the transaction related fields required for the sKash API call
      *
      * @return array

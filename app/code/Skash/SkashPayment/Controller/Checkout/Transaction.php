@@ -77,21 +77,21 @@ class Transaction extends \Magento\Framework\App\Action\Action
 
             if ($order->getIncrementId()) {
 
-                $orderState = $order->getState();
                 // If the order status was updated, !== pending_payment, redirect to homepage
-                if ($orderState !== Order::STATE_PENDING_PAYMENT) {
+                $orderState = $order->getState();
+                if ($orderState !== \Magento\Sales\Model\Order::STATE_PENDING_PAYMENT) {
                     switch ($orderState) {
-                        case Order::STATE_CANCELED:
+                        case \Magento\Sales\Model\Order::STATE_CANCELED:
                             $orderStateMsg = 'rejected';
                             break;
-                        case Order::STATE_PROCESSING:
+                        case \Magento\Sales\Model\Order::STATE_PROCESSING:
                             $orderStateMsg = 'accepted';
                             break;
                         default:
                             $orderStateMsg = 'updated';
                             break;
                     }
-                    $this->messageManager->addNotice(__("Order already $orderStateMsg Check your order history."));
+                    $this->messageManager->addNotice(__("Order already $orderStateMsg. Check your order history."));
                     return $this->resultRedirectFactory->create()->setPath('/');
                 }
 
