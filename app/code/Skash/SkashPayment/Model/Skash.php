@@ -66,6 +66,7 @@ class Skash extends AbstractMethod
 	protected $_urlBuilder;
 
 	protected $_orderFactory;
+	protected $_logger;
 
 	/**
 	 * @var \Magento\Framework\Encryption\EncryptorInterface
@@ -109,6 +110,7 @@ class Skash extends AbstractMethod
 		$this->_orderFactory = $orderFactory;
 		$this->_encryptor = $encryptor;
 		$this->_urlBuilder = $urlBuilder;
+		$this->_logger = $context->getLogger();
 		parent::__construct(
 			$context,
 			$registry,
@@ -145,7 +147,7 @@ class Skash extends AbstractMethod
 		$hashData = $orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate;
 		$secureHash = base64_encode(hash('sha512', $hashData, true));
 
-		return array(
+		$fields = array(
 			'TranID' => $orderId,
 			'Amount' => $orderAmount,
 			'Currency' => $orderCurrency,
@@ -157,6 +159,8 @@ class Skash extends AbstractMethod
 			'ClientIP' => $clientIP,
 			'AdditionalInfo' => $additionalInfo
 		);
+		$this->_logger->debug("QR Transaction | Fields: " . json_encode($fields));
+		return $fields;
 	}
 
 	/**
@@ -167,9 +171,9 @@ class Skash extends AbstractMethod
 	public function getCallbackUrl()
 	{
 		return $this->_urlBuilder->getUrl(
-			'skash/callback/response',
+			'rest/V1/api/',
 			['_secure' => true]
-		);
+		) . 'skash/callback/response';
 	}
 
 	/**
