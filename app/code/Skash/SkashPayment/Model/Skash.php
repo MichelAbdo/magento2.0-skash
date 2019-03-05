@@ -171,9 +171,9 @@ class Skash extends AbstractMethod
 	public function getCallbackUrl()
 	{
 		return $this->_urlBuilder->getUrl(
-			'rest/V1/api/',
+			'skash/checkout/response',
 			['_secure' => true]
-		) . 'skash/callback/response';
+		);
 	}
 
 	/**
