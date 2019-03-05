@@ -37,7 +37,7 @@ interface CallbackInterface
      *
      * @api
      *
-     * @param string $transaction_id Transaction Id
+     * @param string $order_id Order Id
      *
      * @return array[]
      */

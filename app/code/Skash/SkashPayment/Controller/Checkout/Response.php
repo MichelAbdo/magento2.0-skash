@@ -171,11 +171,11 @@ class Response extends \Magento\Framework\App\Action\Action
         }
 
         // Validate the transactionId's value
-        $order = $this->_orderFactory->create()->loadByIncrementId(
-            $transactionId
+        $order = $this->_orderFactory->create()->load(
+            $transactionId, 'skash_transaction_reference'
         );
         if (!$order || empty($order) || !$order->getRealOrderId()) {
-            $this->_logger->debug("Callback | Error: Order $transactionId not found");
+            $this->_logger->debug("Callback | Error: Transaction $transactionId not found");
             return $result->setData(array(
                 'status' => 'error',
                 'message' =>  "Order not found for transaction '$transactionId'"
@@ -207,13 +207,15 @@ class Response extends \Magento\Framework\App\Action\Action
             ));
         }
 
-        $merchantId = $this->getMerchantId();
         $orderId = $order->getRealOrderId();
+        $skashTransactionReference =  $order->getSkashTransactionReference();
+        $merchantId = $this->getMerchantId();
         $orderAmount = (double) $order->getBaseGrandTotal();
         $orderCurrency = $order->getBaseCurrencyCode();
         $orderTimestamp = strtotime($order->getCreatedAt());
-        $orderHashData = $orderId . $status . $orderTimestamp . $merchantId . $orderAmount . $orderCurrency;
+        $orderHashData = $skashTransactionReference . $status . $orderTimestamp . $merchantId . $orderAmount . $orderCurrency;
         $orderSecureHash = base64_encode(hash('sha512', $orderHashData, true));
+
         if ($secureHash != $orderSecureHash) {
             $this->_logger->debug('Callback | Error: Hash does not match for order ' . $orderId);
             return $result->setData(array(

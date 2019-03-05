@@ -41,7 +41,10 @@ if (isset($qrResponse['error'])
 	</p>
 	<?php
 } else {
+	$tranID = $qrResponse['TranID'];
 	$pictureURL = $qrResponse['PictureURL'];
+	$returnText = isset($qrResponse['ReturnText']) ? $qrResponse['ReturnText'] : '';
+	$block->setSkashTransactionReference($tranID);
 	?>
 	<div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_check?order_id=' . $orderId; ?>">
 		<h2 class='skash-title'>
