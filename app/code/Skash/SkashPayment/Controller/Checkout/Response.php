@@ -149,7 +149,7 @@ class Response extends \Magento\Framework\App\Action\Action
         /** @var \Magento\Framework\Controller\Result\Json $resultJson */
         $result = $this->_resultJsonFactory->create();
 
-        if (empty($transactionId) || empty($status)
+        if (empty($transactionId)
             || empty($timestamp) || empty($merchantId)
             || empty($amount) || empty($currency)
             || empty($secureHash)
