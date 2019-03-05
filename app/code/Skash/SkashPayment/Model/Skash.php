@@ -220,12 +220,16 @@ class Skash extends AbstractMethod
 
 		$result = json_decode($result);
 
-		return array(
+		$result = array(
 			'Flag' => $result->Flag,
 			'TranID' => $result->TranID,
 			'PictureURL' => $result->PictureURL,
 			'ReturnText' => $result->ReturnText
 		);
+
+        $this->_logger->debug("QR Transaction | Response: " . json_encode($result));
+
+        return $result;
 	}
 
 	/**

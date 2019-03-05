@@ -138,6 +138,7 @@ class Response extends \Magento\Framework\App\Action\Action
 	public function execute()
     {
         $postData = $this->getRequest()->getPostValue();
+        $this->_logger->debug("Callback | Response post data: " . json_encode($postData));
         $transactionId = isset($postData['transaction_id']) ? $postData['transaction_id'] : '';
         $status = isset($postData['status']) ? $postData['status'] : '';
         $timestamp = isset($postData['timestamp']) ? $postData['timestamp'] : '';
