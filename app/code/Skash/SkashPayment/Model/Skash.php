@@ -128,7 +128,7 @@ class Skash extends AbstractMethod
 	/**
 	 * Return the transaction related fields required for the sKash API call
 	 *
-	 * @param object $order Order object
+	 * @param \Magento\Sales\Model\Order $order Order object
 	 *
 	 * @return array
 	 */
@@ -141,7 +141,6 @@ class Skash extends AbstractMethod
 		$orderAmount = (double) $order->getBaseGrandTotal();
 		$orderCurrency = $order->getBaseCurrencyCode();
 		$orderTimestamp = strtotime($order->getCreatedAt());
-		$clientIP = $order->getRemoteIp();
 		$additionalInfo = '';
 		$currentTimestamp = round(microtime(true) * 1000) - strtotime(date("1-1-1970"));
 		$hashData = $orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate;
@@ -156,11 +155,47 @@ class Skash extends AbstractMethod
 			'TS' => (string) $currentTimestamp,
 			'TranTS' => (string) $orderTimestamp,
 			'MerchantID' => $merchantId,
-			'ClientIP' => $clientIP,
 			'AdditionalInfo' => $additionalInfo
 		);
 		$this->_logger->debug("QR Transaction | Fields: " . json_encode($fields));
 		return $fields;
+	}
+
+	/**
+	 * Get the sKash app deeplink + its related transaction fields
+	 *
+	 * @param \Magento\Sales\Model\Order $order Order object
+	 *
+	 * @return array
+	 */
+	public function getDeeplinkUrl($order)
+	{
+		$appURL = 'https://skash.com/skash?';
+		$merchantId = $this->getMerchantId();
+		$certificate = $this->getCertificate();
+		$callbackURL = $this->getCallbackUrl();
+		$orderId = $order->getRealOrderId();
+		$orderAmount = (double) $order->getBaseGrandTotal();
+		$orderCurrency = $order->getBaseCurrencyCode();
+		$orderTimestamp = strtotime($order->getCreatedAt());
+		$currentURL = $this->getTransactionUrl() . '?data=' . $orderId;
+
+		$mobileHashData = $orderId . $merchantId . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $certificate;
+		$mobileSecureHash = base64_encode(hash('sha512', $mobileHashData, true));
+
+		$fields = array(
+			'strTranID' => $orderId,
+			'MerchantID' => $merchantId,
+			'Amount' => $orderAmount,
+			'Currency' => $orderCurrency,
+			'CallBackURL' => $callbackURL . '?source=mobile',
+			'TS' => (string) $orderTimestamp,
+			'secureHash' => $mobileSecureHash,
+			'currentURL' => $currentURL
+		);
+		$this->_logger->debug("Mobile Transaction | Deeplink: " . $appURL . json_encode($fields));
+
+		return $appURL . json_encode($fields);
 	}
 
 	/**
@@ -172,6 +207,19 @@ class Skash extends AbstractMethod
 	{
 		return $this->_urlBuilder->getUrl(
 			'skash/checkout/response',
+			['_secure' => true]
+		);
+	}
+
+	/**
+	 * Get the Transaction url
+	 *
+	 * @return string
+	 */
+	public function getTransactionUrl()
+	{
+		return $this->_urlBuilder->getUrl(
+			'skash/checkout/transaction',
 			['_secure' => true]
 		);
 	}
@@ -260,16 +308,6 @@ class Skash extends AbstractMethod
 	public function getQRTransactionUrl()
 	{
 		return $this->_encryptor->decrypt($this->getConfigData('qr_api'));
-	}
-
-	/**
-	 * Get the sKash app deeplink requests URL
-	 *
-	 * @return string
-	 */
-	public function getDeeplinkUrl()
-	{
-		return "https://stage.elbarid.com/OnlinePayment/PayQR";
 	}
 
 	/**

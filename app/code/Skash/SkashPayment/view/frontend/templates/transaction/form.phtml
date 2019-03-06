@@ -4,9 +4,31 @@
  * See COPYING.txt for license details.
  */
 
-// $fields = $block->getRequestFields();
-// var_dump($fields);
 $orderId = $block->getOrderID();
+
+if ($block->isMobile()) {
+	header('Location: ' . $block->getDeeplinkUrl());
+	?>
+	<div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_check?order_id=' . $orderId; ?>">
+		<h2 class='skash-title'>
+			<?php echo __("Your order has been placed!"); ?>
+		</h2>
+		<div class='skash-notifications'></div>
+		<div class='skash-buttons'>
+			<span class='skash-back-to-checout hidden'>
+				<?php echo __('Click <a href="%1">here</a> to go back to checkout page.',
+					$block->escapeUrl($block->getCheckoutUrl())); ?>
+			</span>
+			<span class='skash-continue-shopping hidden'>
+				<?php echo __('Click <a href="%1">here</a> to continue shopping.',
+				$block->escapeUrl($block->getContinueShoppingUrl())); ?>
+			</span>
+		</div>
+	</div>
+	<?php
+	exit();
+}
+
 $qrResponse = $block->getTransactionQR();
 
 if (isset($qrResponse['error'])
@@ -73,7 +95,7 @@ if (isset($qrResponse['error'])
 require([
 	'jquery'
 ], function ($) {
-	if ($('#skash_qr_response .skash-qr-image img').length > 0) {
+	if ($('#skash_qr_response').length > 0) {
 		var statusCheckInterval = setInterval(function() {
 			$(function () {
 				$(document).ready(function() {
