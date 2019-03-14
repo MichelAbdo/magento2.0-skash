@@ -170,17 +170,18 @@ class Skash extends AbstractMethod
 	 */
 	public function getDeeplinkUrl($order)
 	{
-		$appURL = 'https://skash.com/skash?';
+		$appURL = 'skashpay://skash.com/skash=?';
 		$merchantId = $this->getMerchantId();
 		$certificate = $this->getCertificate();
 		$callbackURL = $this->getCallbackUrl();
 		$orderId = $order->getRealOrderId();
 		$orderAmount = (double) $order->getBaseGrandTotal();
 		$orderCurrency = $order->getBaseCurrencyCode();
-		$orderTimestamp = strtotime($order->getCreatedAt());
+		$currentTimestamp = date("ymdHis");;
 		$currentURL = $this->getTransactionUrl() . '?data=' . $orderId;
+		$browserType = $this->getBrowserType();
 
-		$mobileHashData = $orderId . $merchantId . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $certificate;
+		$mobileHashData = $orderId . $merchantId . $orderAmount . $orderCurrency . $callbackURL . $currentTimestamp . $certificate;
 		$mobileSecureHash = base64_encode(hash('sha512', $mobileHashData, true));
 
 		$fields = array(
@@ -189,9 +190,10 @@ class Skash extends AbstractMethod
 			'Amount' => $orderAmount,
 			'Currency' => $orderCurrency,
 			'CallBackURL' => $callbackURL . '?source=mobile',
-			'TS' => (string) $orderTimestamp,
+			'TS' => (string) $currentTimestamp,
 			'secureHash' => $mobileSecureHash,
-			'currentURL' => $currentURL
+			'currentURL' => $currentURL,
+			'browsertype' => $browserType
 		);
 		$this->_logger->debug("Mobile Transaction | Deeplink: " . $appURL . json_encode($fields));
 
@@ -346,6 +348,26 @@ class Skash extends AbstractMethod
 	{
 		$paymentAction = $this->getConfigData('payment_action');
 		return empty($paymentAction) ? true : $paymentAction;
+	}
+
+	/**
+	 * Get browser type
+	 *
+	 * @return string
+	 */
+	public function getBrowserType()
+	{
+		$browserType = '';
+	    $userAgent = $_SERVER['HTTP_USER_AGENT'];
+	    if (preg_match('/CriOS/', $userAgent)) {
+	        $browserType = 'chrome';
+	    } else if (preg_match('/FxiOS/', $userAgent)) {
+	        $browserType = 'firefox';
+	    } else {
+	        $browserType = 'safari';
+	    }
+
+	    return $browserType;
 	}
 
 }
