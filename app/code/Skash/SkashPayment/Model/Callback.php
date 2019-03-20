@@ -154,12 +154,15 @@ class Callback implements CallbackInterface
 		$currency,
 		$secure_hash
 	) {
+                $this->_logger->debug("Callback | Inside Response Action");
+                $this->_logger->debug("Callback | tansaction id" . $transaction_id);
+                $this->_logger->debug("Callback | status" . $status);
 		if (empty($transaction_id) || empty($status)
 			|| empty($timestamp) || empty($merchant_id)
 			|| empty($amount) || empty($currency)
 			|| empty($secure_hash)
 		) {
-			$this->_logger->debug("Callback | Error: Order Invalid / empty params");
+			$this->_logger->debug("Callback | Error: Order $transaction_id Invalid / empty params");
 			return [[
 				'status' => 'error',
 				'message' => 'Invalid / Empty Transaction Params.'

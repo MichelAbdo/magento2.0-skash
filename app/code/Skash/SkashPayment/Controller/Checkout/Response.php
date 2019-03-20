@@ -209,12 +209,17 @@ class Response extends \Magento\Framework\App\Action\Action
         }
 
         $merchantId = $this->getMerchantId();
+        $certificate = $this->getCertificate();
         $orderId = $order->getRealOrderId();
         $orderAmount = (double) $order->getBaseGrandTotal();
         $orderCurrency = $order->getBaseCurrencyCode();
         $orderTimestamp = strtotime($order->getCreatedAt());
-        $orderHashData = $orderId . $status . $orderTimestamp . $merchantId . $orderAmount . $orderCurrency;
+        $orderHashData = $orderId . $status . $orderTimestamp . $merchantId . $orderAmount . $orderCurrency . $certificate;
         $orderSecureHash = base64_encode(hash('sha512', $orderHashData, true));
+
+        $this->_logger->debug("Callback | DB Data: " . json_encode([$orderId, $status, $orderTimestamp, $merchantId, $orderAmount, $orderCurrency]));
+        $this->_logger->debug("Callback | DB Hash: " . $orderSecureHash);
+
         if ($secureHash != $orderSecureHash) {
             $this->_logger->debug('Callback | Error: Hash does not match for order ' . $orderId);
             return $result->setData(array(
@@ -298,5 +303,20 @@ class Response extends \Magento\Framework\App\Action\Action
         );
         return $this->_encryptor->decrypt($merchantId);
     }
+    /**
+     * Get the certificate from the modules' backend configiguration
+     *
+     * @return string Merchant id
+     */
+    public function getCertificate()
+    {
+        $certificate = $this->_scopeConfig->getValue(
+            'payment/skash/certificate',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+        );
+        return $this->_encryptor->decrypt($certificate);
+    }
+
+
 
 }

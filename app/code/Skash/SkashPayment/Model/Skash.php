@@ -173,30 +173,28 @@ class Skash extends AbstractMethod
 		$appURL = 'skashpay://skash.com/skash=?';
 		$merchantId = $this->getMerchantId();
 		$certificate = $this->getCertificate();
-		$callbackURL = $this->getCallbackUrl();
+		$callbackURL = $this->getCallbackUrl() . '?source=mobile';
 		$orderId = $order->getRealOrderId();
 		$orderAmount = (double) $order->getBaseGrandTotal();
 		$orderCurrency = $order->getBaseCurrencyCode();
-		$currentTimestamp = date("ymdHis");;
+                $orderTimestamp = strtotime($order->getCreatedAt());
+		//$currentTimestamp = date("ymdHis");;
 		$currentURL = $this->getTransactionUrl() . '?data=' . $orderId;
 		$browserType = $this->getBrowserType();
-
-		$mobileHashData = $orderId . $merchantId . $orderAmount . $orderCurrency . $callbackURL . $currentTimestamp . $certificate;
+		$mobileHashData = $orderId . $merchantId . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $certificate;
 		$mobileSecureHash = base64_encode(hash('sha512', $mobileHashData, true));
-
 		$fields = array(
 			'strTranID' => $orderId,
 			'MerchantID' => $merchantId,
 			'Amount' => $orderAmount,
 			'Currency' => $orderCurrency,
-			'CallBackURL' => $callbackURL . '?source=mobile',
-			'TS' => (string) $currentTimestamp,
+			'CallBackURL' => $callbackURL,
+			'TS' => (string) $orderTimestamp,
 			'secureHash' => $mobileSecureHash,
 			'currentURL' => $currentURL,
 			'browsertype' => $browserType
 		);
 		$this->_logger->debug("Mobile Transaction | Deeplink: " . $appURL . json_encode($fields));
-
 		return $appURL . json_encode($fields);
 	}
 
@@ -235,19 +233,6 @@ class Skash extends AbstractMethod
 	 */
 	public function getTransactionQR($requestFields)
 	{
-		// @todo: Check https://devdocs.magento.com/guides/v2.3/get-started/gs-web-api-request.html
-		/*
-		$client = new \Zend\Http\Client();
-		$options = [
-		   'adapter'   => 'Zend\Http\Client\Adapter\Curl',
-		   'curloptions' => [CURLOPT_FOLLOWLOCATION => true],
-		   'maxredirects' => 0,
-		   'timeout' => 30
-		 ];
-		 $client->setOptions($options);
-
-		 $response = $client->send($request);
-		*/
 		$data_string = json_encode($requestFields);
 
 		$url = $this->getQRTransactionUrl();
@@ -357,17 +342,21 @@ class Skash extends AbstractMethod
 	 */
 	public function getBrowserType()
 	{
-		$browserType = '';
-	    $userAgent = $_SERVER['HTTP_USER_AGENT'];
-	    if (preg_match('/CriOS/', $userAgent)) {
-	        $browserType = 'chrome';
-	    } else if (preg_match('/FxiOS/', $userAgent)) {
-	        $browserType = 'firefox';
-	    } else {
-	        $browserType = 'safari';
-	    }
-
-	    return $browserType;
+            $ub = '';
+            $u_agent = $_SERVER['HTTP_USER_AGENT'];
+            if (preg_match('/Firefox/i', $u_agent) || preg_match('/FxiOS/', $u_agent)) {
+                $ub = "firefox";
+            } elseif (preg_match('/OPR/i',$u_agent)) {
+                $ub = "opera";
+            } elseif ((preg_match('/Chrome/i',$u_agent) && !preg_match('/Edge/i',$u_agent))
+                || preg_match('/CriOS/', $u_agent)
+            ) {
+                $ub = "chrome";
+                //$ub = "Chrome";
+            } else {
+                $ub = "safari";
+            }
+            return $ub;
 	}
 
 }
