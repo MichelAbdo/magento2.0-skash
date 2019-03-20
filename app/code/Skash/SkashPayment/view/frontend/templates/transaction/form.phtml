@@ -3,11 +3,9 @@
  * Copyright © 2013-2017 Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
-
 $orderId = $block->getOrderID();
 $isMobile = $block->isMobile();
 if ($isMobile) {
-//	header('Location: ' . $block->getDeeplinkUrl());
 	?>
 	<div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_check?order_id=' . $orderId; ?>">
 		<h2 class='skash-title'>
@@ -26,7 +24,6 @@ if ($isMobile) {
 		</div>
 	</div>
 	<?php
-	// exit();
 }
 else {
 	$qrResponse = $block->getTransactionQR();
@@ -73,7 +70,7 @@ else {
 			<h3>
 				<?php echo __('Scan the QR with your sKash app to complete the payment.'); ?>
 			</h3>
-			<div class='skash-qr-image'>
+			<div class='skash-qr-image <?php echo $block->getQRSize(); ?>'>
 				<?php echo "<img src='$pictureURL' alt='sKash QR code' title='sKash QR code'/>"; ?>
 			</div>
 			<div class='skash-buttons'>
@@ -111,6 +108,7 @@ require([
 									$('#skash_qr_response .skash-notifications').html(
 										'<div class="messages"><div class="message-success success message" data-ui-id="message-success"><div>The transaction is successfully done.</div></div></div>'
 									);
+									$('#skash_qr_response .skash-qr-image').find().addClass('hidden');
 									$('#skash_qr_response .skash-back-to-checout').find().addClass('hidden');
 									$('#skash_qr_response .skash-continue-shopping').find().removeClass('hidden');
 								} else if (data[0].message == 'Rejected') {
@@ -126,10 +124,7 @@ require([
 				});
 			}, 3000);
 			<?php if ($isMobile) { ?>
-				// location.href = 'https://google.com';
-				// window.location = "skashpay://skash.com/skash=";
 				window.location.href = '<?php echo $block->getDeeplinkUrl(); ?>';
-				// return false;
 			<?php }; ?>
 		});
 	}
@@ -139,11 +134,12 @@ require([
 <style>
 @media (min-width: 978px) {
 	.skash-qr-image img {
-		max-width: 50%;
 		height: auto;
 	}
+	.skash-qr-image.skash-medium { max-width: 450px; }
+	.skash-qr-image.skash-small { max-width: 300px; }
 	#skash_qr_response .hidden {
-		display: none;
+		display: none!important;
 	}
 }
 </style>

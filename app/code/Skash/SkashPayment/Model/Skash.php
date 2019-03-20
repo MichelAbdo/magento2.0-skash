@@ -298,6 +298,16 @@ class Skash extends AbstractMethod
 	}
 
 	/**
+	 * Get the sKash QR Size
+	 *
+	 * @return string
+	 */
+	public function getQRSize()
+	{
+		return $this->getConfigData('qr_size');
+	}
+
+	/**
 	 * Get initialized flag status
 	 *
 	 * @return true

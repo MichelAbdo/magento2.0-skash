@@ -167,6 +167,16 @@ class Form extends \Magento\Payment\Block\Form
     }
 
     /**
+     * Get the QR image size
+     *
+     * @return string
+     */
+    public function getQRSize()
+    {
+        return $this->_skashPaymentMethod->getQRSize();
+    }
+
+    /**
      * Get the homepage url
      *
      * @return string
