@@ -61,6 +61,8 @@ else {
 		<?php
 	} else {
 		$pictureURL = $qrResponse['PictureURL'];
+		$tranID = $qrResponse['TranID'];
+		$block->setSkashTransactionReference($tranID);
 		?>
 		<div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_check?order_id=' . $orderId; ?>">
 			<h2 class='skash-title'>

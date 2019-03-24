@@ -177,6 +177,19 @@ class Form extends \Magento\Payment\Block\Form
     }
 
     /**
+     * Set the skash transaction Reference
+     *
+     * @return Skash\SkashPayment\Block\Transaction\Form
+     */
+    public function setSkashTransactionReference($transactionID)
+    {
+        $order = $this->_getOrder();
+        $order->setSkashTransactionReference($transactionID);
+        $order->save();
+        return $this;
+    }
+
+    /**
      * Get the homepage url
      *
      * @return string
