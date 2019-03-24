@@ -13,9 +13,9 @@ if ($isMobile) {
 		</h2>
 		<div class='skash-notifications'></div>
 		<div class='skash-buttons'>
-			<span class='skash-back-to-checout hidden'>
+			<span class='skash-back-to-checout'>
 				<?php echo __('Click <a href="%1">here</a> to go back to checkout page.',
-					$block->escapeUrl($block->getCheckoutUrl())); ?>
+					$block->escapeUrl($block->getCancelAndRedirectToCheckoutUrl())); ?>
 			</span>
 			<span class='skash-continue-shopping hidden'>
 				<?php echo __('Click <a href="%1">here</a> to continue shopping.',
@@ -50,10 +50,11 @@ else {
 			</div>
 		</div>
 		<h2><?php echo __('Try again or choose another payment method.'); ?></h2>
+		<?php // @todo: put back the item in the cart and redirect to it ?>
 		<p>
 			<?php echo __('Click <a href="%1">here</a> to go back to checkout page.',
 					$block->escapeUrl($block->getCheckoutUrl())); ?>
-		</h2>
+		</p>
 		<p>
 			<?php echo __('Or click <a href="%1">here</a> to continue shopping.',
 				$block->escapeUrl($block->getContinueShoppingUrl())); ?>
@@ -78,7 +79,7 @@ else {
 			<div class='skash-buttons'>
 				<span class='skash-back-to-checout'>
 					<?php echo __('Click <a href="%1">here</a> to go back to checkout page.',
-						$block->escapeUrl($block->getCheckoutUrl())); ?>
+						$block->escapeUrl($block->getCancelAndRedirectToCheckoutUrl())); ?>
 				</span>
 				<span class='skash-continue-shopping hidden'>
 					<?php echo __('Click <a href="%1">here</a> to continue shopping.',

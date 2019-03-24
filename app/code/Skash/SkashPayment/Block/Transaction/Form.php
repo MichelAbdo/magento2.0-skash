@@ -167,6 +167,17 @@ class Form extends \Magento\Payment\Block\Form
     }
 
     /**
+     * Get the cancel payment URL
+// $block->getBaseUrl() . "skash/checkout/cancel"
+     *
+     * @return string
+     */
+    public function getCancelAndRedirectToCheckoutUrl()
+    {
+        return $this->getUrl('skash/checkout/cancel', ['_secure' => true]);
+    }
+
+    /**
      * Get the QR image size
      *
      * @return string

@@ -268,6 +268,56 @@ class Skash extends AbstractMethod
 	}
 
 	/**
+	 * Make an API call to cancel the QR Payment using the transaction id
+	 *
+	 * @param array $transaction_id QR transaction id
+	 *
+	 * @return array
+	 */
+	public function cancelQRPayment($transaction_id)
+	{
+		$timestamp = round(microtime(true) * 1000) - strtotime(date("1-1-1970"));
+		$hash_data = $timestamp . $transaction_id . $this->getCertificate();
+		$secure_hash = base64_encode(hash('sha512', $hash_data, true));
+		$data_string = json_encode([
+			'TranID' => $transaction_id,
+			'TS' => $timestamp,
+			'MerchantID' => $this->getMerchantId(),
+			'SecureHash' => $secure_hash
+		]);
+        $this->_logger->debug("Cancel QR Payment | Request Body: " . $data_string);
+
+		$url = dirname($this->getQRTransactionUrl()) . '/CancelQRPayment';
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_POST, true);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+		    'Content-Type: application/json'
+			)
+		);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+		$result = curl_exec($ch);
+		curl_close($ch);
+
+		if (!$result || !json_decode($result)) {
+			return array('error' => __('Error while establishing connection.'));
+		}
+
+		$result = json_decode($result);
+
+		$result = array(
+			'Flag' => $result->Flag,
+			'ReferenceNo' => $result->ReferenceNo,
+			'ReturnText' => $result->ReturnText
+		);
+
+        $this->_logger->debug("Cancel QR Payment | Response: " . json_encode($result));
+
+        return $result;
+	}
+
+	/**
 	 * Get the merchant id from the modules' backend configiguration
 	 *
 	 * @return string Merchant id
