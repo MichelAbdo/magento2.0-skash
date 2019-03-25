@@ -240,8 +240,11 @@ class Callback implements CallbackInterface
 
 		if ($order->canInvoice()) {
 			$invoice = $this->_invoiceService->prepareInvoice($order);
+            $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_ONLINE);
 			$invoice->register();
+			$invoice->setState(\Magento\Sales\Model\Order\Invoice::STATE_PAID);
 			$invoice->save();
+			$invoice->pay();
 			$transactionSave = $this->_transaction->addObject(
 				$invoice
 			)->addObject(
