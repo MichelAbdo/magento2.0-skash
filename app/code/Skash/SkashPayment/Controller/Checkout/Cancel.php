@@ -23,6 +23,10 @@ class Cancel extends \Magento\Framework\App\Action\Action
      */
     protected $_orderFactory;
 
+    /**
+     * @var \Magento\Sales\Api\OrderRepositoryInterface
+     */
+    protected $_orderManagement;
 
     /**
      * @var \Magento\Paypal\Helper\Checkout
@@ -48,6 +52,7 @@ class Cancel extends \Magento\Framework\App\Action\Action
         \Magento\Sales\Model\OrderFactory $orderFactory,
         \Skash\SkashPayment\Model\Skash $_skashPaymentMethod,
         \Magento\Paypal\Helper\Checkout $checkoutHelper,
+        \Magento\Sales\Api\OrderManagementInterface $orderManagement,
         \Psr\Log\LoggerInterface $logger
     ) {
         $this->_checkoutSession = $checkoutSession;
@@ -55,6 +60,7 @@ class Cancel extends \Magento\Framework\App\Action\Action
         $this->_logger = $logger;
         $this->_skashPaymentMethod = $_skashPaymentMethod;
         $this->_checkoutHelper = $checkoutHelper;
+        $this->_orderManagement = $orderManagement;
         parent::__construct($context);
     }
 
