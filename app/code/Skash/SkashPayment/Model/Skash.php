@@ -384,6 +384,25 @@ class Skash extends AbstractMethod
 		$stateObject->setCustomerNoteNotify(false);
 	}
 
+    /**
+     * Refund specified amount for payment
+     *
+     * @param \Magento\Framework\DataObject|InfoInterface $payment
+     * @param float $amount
+     * @return $this
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @api
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+    public function refund(\Magento\Payment\Model\InfoInterface $payment, $amount)
+    {
+    	die('here!');
+        if (!$this->canRefund()) {
+            throw new \Magento\Framework\Exception\LocalizedException(__('The refund action is not available.'));
+        }
+        return $this;
+    }
+
 	/**
 	 * Get config action to process initialization
 	 *

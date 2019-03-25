@@ -261,23 +261,28 @@ class Callback implements CallbackInterface
 		}
 		$payment = $order->getPayment();
 		$payment->setLastTransId($orderId);
+		// http://excellencemagentoblog.com/blog/2012/05/01/magento-create-custom-payment-method-api-based/
+		// $payment->setIsTransactionClosed(1);
 		$payment->setTransactionId($orderId);
-		$formatedPrice = $order->getBaseCurrency()->formatTxt($order->getGrandTotal());
-		$message = __('The cuptured amount is %1.', $formatedPrice);
+		$payment->setParentTransactionId($payment->getTransactionId());
 		$payment->setAdditionalInformation([
 			\Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array(
-				'StatusId' => $status,
-				'Timestamp' =>  $orderTimestamp
+				'StatusId' => 1,
+				'Timestamp' =>  12345678
 			)
 		]);
 		$transaction = $payment->addTransaction(
-			\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE
+			\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true, ""
 		);
+		//https://stackoverflow.com/questions/27548196/magento-payment-gateway-refund-online
+    	$transaction->setIsClosed(true);
+
+		$formatedPrice = $order->getBaseCurrency()->formatTxt($order->getGrandTotal());
+		$message = __('The cuptured amount is %1.', $formatedPrice);
 		$payment->addTransactionCommentsToOrder(
 			$transaction,
 			$message
 		);
-		$payment->setParentTransactionId(null);
 		$payment->save();
 		$order->save();
 
