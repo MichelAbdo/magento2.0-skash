@@ -396,11 +396,77 @@ class Skash extends AbstractMethod
      */
     public function refund(\Magento\Payment\Model\InfoInterface $payment, $amount)
     {
-    	die('here!');
-        if (!$this->canRefund()) {
-            throw new \Magento\Framework\Exception\LocalizedException(__('The refund action is not available.'));
+        if (!$payment->getParentTransactionId()) {
+			$this->_logger->debug("Reverse Payment | Invalid transaction ID.");
+			throw new \Magento\Framework\Exception\LocalizedException(__('Invalid transaction ID.'));
         }
-        return $this;
+
+        $transaction_id = $payment->getParentTransactionId();
+		$timestamp = round(microtime(true) * 1000) - strtotime(date("1-1-1970"));
+		$hash_data = $timestamp . $transaction_id . $this->getCertificate();
+		$secure_hash = base64_encode(hash('sha512', $hash_data, true));
+		$data_string = json_encode([
+			'TranID' => $transaction_id,
+			'TS' => $timestamp,
+			'MerchantID' => $this->getMerchantId(),
+			'SecureHash' => $secure_hash
+		]);
+        $this->_logger->debug("Reverse Payment | Request Body: " . $data_string);
+
+		$url = dirname($this->getQRTransactionUrl()) . '/ReverseQRPayment';
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_POST, true);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+		    'Content-Type: application/json'
+			)
+		);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+		$result = curl_exec($ch);
+		curl_close($ch);
+
+		if (!$result || !json_decode($result)) {
+			$this->_logger->debug("Reverse Payment | Error while establishing connection for transaction: " . $transaction_id);
+            throw new \Magento\Framework\Exception\LocalizedException(__('Error while establishing connection.'));
+		}
+
+		$result = json_decode($result);
+
+		$result = array(
+			'Flag' => $result->Flag,
+			'ReferenceNo' => $result->ReferenceNo,
+			'ReturnText' => $result->ReturnText
+		);
+
+        $this->_logger->debug("Reverse Payment | Response: " . json_encode($result));
+
+        switch ($result['Flag']) {
+            case 1:
+                $this->_logger->debug("Reverse Payment - Success | Transaction $transaction_id reversed successfully, " . $result['ReturnText']);
+                $this->messageManager->addNotice(__("The sKash Transaction $transaction_id was reversed successfully."));
+                break;
+            case 3:
+                $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transaction_id Timed-out, " . $result['ReturnText']);
+				throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction $transaction_id Timed-out.'));
+                break;
+            case 7:
+                $this->_logger->debug("Reverse Payment - Success | Transaction $transaction_id canceled.");
+                $this->messageManager->addNotice(__("nsaction $transaction_id canceled."));
+				throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction $transaction_id Timed-out.'));
+                break;
+            case -1:
+                $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transaction_id unsuccessful, " . $result['ReturnText']);
+				throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction $transaction_id unsuccessful.'));
+                break;
+            case 10:
+                $this->_logger->debug("Reverse Payment - Error | Invalid data submission for Transaction $transaction_id, " . $result['ReturnText']);
+				throw new \Magento\Framework\Exception\LocalizedException(__('Invalid data submission for Transaction $transaction_id.'));
+                break;
+            default:
+                throw new \Magento\Framework\Exception\LocalizedException(__('Payment refunding error.'));
+
+		return $this;
     }
 
 	/**

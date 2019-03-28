@@ -250,7 +250,7 @@ class Callback implements CallbackInterface
 		$payment = $order->getPayment();
 		$payment->setLastTransId($transaction_id);
 		$payment->setTransactionId($transaction_id);
-		$payment->setParentTransactionId(null);
+		$payment->setParentTransactionId($transaction_id);
 		$payment->setIsTransactionClosed(1);
 		$payment->setAdditionalInformation([
 			\Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array(
