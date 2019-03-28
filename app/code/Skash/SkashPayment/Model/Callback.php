@@ -99,8 +99,8 @@ class Callback implements CallbackInterface
 	 * @param \Magento\Sales\Model\Order\Email\Sender\InvoiceSenderr	$invoiceSender
 	 * @param \Magento\Framework\Encryption\EncryptorInterface 			$encryptor
 	 * @param \Magento\Framework\App\Config\ScopeConfigInterface 		$scopeConfig
-	 * @param \Magento\Framework\DB\Transaction 						$resultJsonFactory
-	 * @param \Magento\Framework\Controller\Result\JsonFactory 			$dbTransaction
+	 * @param \Magento\Framework\Controller\Result\JsonFactory			$resultJsonFactory
+	 * @param \Magento\Framework\DB\Transaction                			$dbTransaction
 	 */
 	public function __construct(
 		Context $context,
@@ -154,9 +154,10 @@ class Callback implements CallbackInterface
 		$currency,
 		$secure_hash
 	) {
-                $this->_logger->debug("Callback | Inside Response Action");
-                $this->_logger->debug("Callback | tansaction id" . $transaction_id);
-                $this->_logger->debug("Callback | status" . $status);
+        $this->_logger->debug("Callback | Inside Response Action");
+        $this->_logger->debug("Callback | tansaction id" . $transaction_id);
+        $this->_logger->debug("Callback | status" . $status);
+
 		if (empty($transaction_id) || empty($status)
 			|| empty($timestamp) || empty($merchant_id)
 			|| empty($amount) || empty($currency)
@@ -208,14 +209,6 @@ class Callback implements CallbackInterface
 		}
 
 		if ($order->getStatus() !== Order::STATE_PENDING_PAYMENT) {
-			// @todo: check why the json body is returned empty
-			// https://www.brainacts.com/blog/how-to-return-a-json-response-from-a-controller-in-magento-2
-			/** @var \Magento\Framework\Controller\Result\Json $resultJson */
-			// $result = $this->_resultJsonFactory->create();
-			// return $result->setData(array(
-			// 	'status' => 'error',
-			// 	'message' => 'Order already Updated.'
-			// ));
 			$this->_logger->debug("Callback | Error: Order $transaction_id already updated");
 			return [[
 				'status' => __('error'),
@@ -242,15 +235,10 @@ class Callback implements CallbackInterface
 			$invoice = $this->_invoiceService->prepareInvoice($order);
             $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_ONLINE);
 			$invoice->register();
-			$invoice->setState(\Magento\Sales\Model\Order\Invoice::STATE_PAID);
-			$invoice->save();
+        	$invoice->setTransactionId($transaction_id);
 			$invoice->pay();
-			$transactionSave = $this->_transaction->addObject(
-				$invoice
-			)->addObject(
-				$invoice->getOrder()
-			);
-			$transactionSave->save();
+			$invoice->save();
+
 			$order->setState(Order::STATE_PROCESSING);
 			$order->setStatus(Order::STATE_PROCESSING);
 			if ($invoice && !$order->getEmailSent()) {
@@ -260,21 +248,19 @@ class Callback implements CallbackInterface
 			$order = $order->save();
 		}
 		$payment = $order->getPayment();
-		$payment->setLastTransId($orderId);
-		// http://excellencemagentoblog.com/blog/2012/05/01/magento-create-custom-payment-method-api-based/
-		// $payment->setIsTransactionClosed(1);
-		$payment->setTransactionId($orderId);
-		$payment->setParentTransactionId($payment->getTransactionId());
+		$payment->setLastTransId($transaction_id);
+		$payment->setTransactionId($transaction_id);
+		$payment->setParentTransactionId(null);
+		$payment->setIsTransactionClosed(1);
 		$payment->setAdditionalInformation([
 			\Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array(
-				'StatusId' => 1,
-				'Timestamp' =>  12345678
+				'StatusId' => $status,
+				'Timestamp' =>  $orderTimestamp
 			)
 		]);
 		$transaction = $payment->addTransaction(
-			\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true, ""
+			\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true
 		);
-		//https://stackoverflow.com/questions/27548196/magento-payment-gateway-refund-online
     	$transaction->setIsClosed(true);
 
 		$formatedPrice = $order->getBaseCurrency()->formatTxt($order->getGrandTotal());
