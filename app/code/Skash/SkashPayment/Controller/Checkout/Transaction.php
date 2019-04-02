@@ -16,7 +16,8 @@ namespace Skash\SkashPayment\Controller\Checkout;
  */
 class Transaction extends \Magento\Framework\App\Action\Action
 {
-	/**
+
+    /**
      * @var \Magento\Checkout\Model\Session
      */
     protected $_checkoutSession;
@@ -31,7 +32,7 @@ class Transaction extends \Magento\Framework\App\Action\Action
      */
     protected $_checkoutHelper;
 
-	/**
+    /**
      * @var \Psr\Log\LoggerInterface
      */
     protected $_logger;
@@ -42,9 +43,14 @@ class Transaction extends \Magento\Framework\App\Action\Action
     protected $_sKashFactory;
 
     /**
-    *
-    */
-	public function __construct(
+     * @param \Magento\Framework\App\Action\Context $context
+     * @param \Magento\Checkout\Model\Session       $checkoutSession
+     * @param \Magento\Sales\Model\OrderFactory     $orderFactory
+     * @param \Skash\SkashPayment\Model\Skash       $sKashFactory
+     * @param \Magento\Paypal\Helper\Checkout       $checkoutHelper
+     * @param \Psr\Log\LoggerInterface              $logger
+     */
+    public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \Magento\Checkout\Model\Session $checkoutSession,
         \Magento\Sales\Model\OrderFactory $orderFactory,
@@ -52,7 +58,7 @@ class Transaction extends \Magento\Framework\App\Action\Action
         \Magento\Paypal\Helper\Checkout $checkoutHelper,
         \Psr\Log\LoggerInterface $logger
     ) {
-    	$this->_checkoutSession = $checkoutSession;
+        $this->_checkoutSession = $checkoutSession;
         $this->_orderFactory = $orderFactory;
         $this->_logger = $logger;
         $this->_sKashFactory = $sKashFactory;
@@ -60,8 +66,8 @@ class Transaction extends \Magento\Framework\App\Action\Action
         parent::__construct($context);
     }
 
-	/**
-     * Submit transaction to Payflow getaway into iframe
+    /**
+     * Submit order info and obtain skash QR
      *
      * @return void
      */
@@ -97,9 +103,8 @@ class Transaction extends \Magento\Framework\App\Action\Action
                 }
 
                 $order->addStatusHistoryComment(
-                     __("Getting sKash QR."),
-                     $order->getStatus()
-                 )->setIsCustomerNotified(false)->save();
+                    __("Getting sKash QR."), $order->getStatus()
+                )->setIsCustomerNotified(false)->save();
             }
         }
 

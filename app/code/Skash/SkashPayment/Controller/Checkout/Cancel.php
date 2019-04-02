@@ -15,6 +15,7 @@ use \Magento\Sales\Model\Order;
  */
 class Cancel extends \Magento\Framework\App\Action\Action
 {
+
     /**
      * @var \Magento\Checkout\Model\Session
      */
@@ -90,8 +91,7 @@ class Cancel extends \Magento\Framework\App\Action\Action
                 $this->_checkoutSession->getLastRealOrderId()
             );
 
-            if ($order->getIncrementId()
-                && $order->getState() == Order::STATE_PENDING_PAYMENT
+            if ($order->getIncrementId() && $order->getState() == Order::STATE_PENDING_PAYMENT
             ) {
                 $order_id = $order->getIncrementId();
                 $transaction_id = $order->getSkashTransactionReference();
@@ -113,11 +113,10 @@ class Cancel extends \Magento\Framework\App\Action\Action
                             $order->getEntityId()
                         );
                         $order->addStatusHistoryComment(
-                            __("sKash Transaction Canceled"),
-                            Order::STATE_CANCELED
-                        )->setIsCustomerNotified(false)
-                        ->setSkashTransactionReference($result['ReferenceNo'])
-                        ->save();
+                                __("sKash Transaction Canceled"), Order::STATE_CANCELED
+                            )->setIsCustomerNotified(false)
+                            ->setSkashTransactionReference($result['ReferenceNo'])
+                            ->save();
 
                         $this->_logger->debug("Cancel Payment - Success | Order $order_id canceled ");
                         $this->messageManager->addNotice(__("Order $order_id canceled."));

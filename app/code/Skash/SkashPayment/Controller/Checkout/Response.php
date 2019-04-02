@@ -29,7 +29,6 @@ class Response extends \Magento\Framework\App\Action\Action
 {
 
     const PAYMENT_STATUS_REJECTED = 0;
-
     const PAYMENT_STATUS_APPROVED = 1;
 
     /**
@@ -57,7 +56,7 @@ class Response extends \Magento\Framework\App\Action\Action
      */
     protected $_checkoutHelper;
 
-	/**
+    /**
      * @var \Psr\Log\LoggerInterface
      */
     protected $_logger;
@@ -71,10 +70,10 @@ class Response extends \Magento\Framework\App\Action\Action
      * @var \Magento\Sales\Model\Order\Email\Sender\OrderSender
      */
     protected $_orderSender;
+
     /**
      * @var \Magento\Sales\Model\Order\Email\Sender\InvoiceSender
      */
-
     protected $_invoiceSender;
 
     /**
@@ -88,24 +87,24 @@ class Response extends \Magento\Framework\App\Action\Action
     protected $_scopeConfig;
 
     /**
-    * @var \Magento\Framework\Controller\Result\JsonFactory
-    */
+     * @var \Magento\Framework\Controller\Result\JsonFactory
+     */
     protected $_resultJsonFactory;
 
     /**
-     * @param \Magento\Framework\App\Action\Context                   $context
-     * @param \Magento\Sales\Model\OrderFactory                       $orderFactory
-     * @param \Skash\SkashPayment\Model\Skash                         $sKashFactory
-     * @param \Magento\Paypal\Helper\Checkout                         $checkoutHelper
-     * @param \Magento\Sales\Api\OrderManagementInterface             $orderManagement
-     * @param \Magento\Sales\Model\Service\InvoiceService             $invoiceService
-     * @param \Magento\Sales\Model\Order\Email\Sender\OrderSender     $orderSender
-     * @param \Magento\Sales\Model\Order\Email\Sender\InvoiceSender   $invoiceSender
-     * @param \Magento\Framework\Encryption\EncryptorInterface        $encryptor
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface      $scopeConfig
-     * @param \Magento\Framework\DB\Transaction                       $resultJsonFactory
-     * @param \Magento\Framework\Controller\Result\JsonFactory        $dbTransaction
-     * @param \Psr\Log\LoggerInterface                                $logger
+     * @param \Magento\Framework\App\Action\Context                 $context
+     * @param \Magento\Sales\Model\OrderFactory                     $orderFactory
+     * @param \Skash\SkashPayment\Model\Skash                       $sKashFactory
+     * @param \Magento\Paypal\Helper\Checkout                       $checkoutHelper
+     * @param \Magento\Sales\Api\OrderManagementInterface           $orderManagement
+     * @param \Magento\Sales\Model\Service\InvoiceService           $invoiceService
+     * @param \Magento\Sales\Model\Order\Email\Sender\OrderSender   $orderSender
+     * @param \Magento\Sales\Model\Order\Email\Sender\InvoiceSender $invoiceSender
+     * @param \Magento\Framework\Encryption\EncryptorInterface      $encryptor
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface    $scopeConfig
+     * @param \Magento\Framework\DB\Transaction                     $resultJsonFactory
+     * @param \Magento\Framework\Controller\Result\JsonFactory      $dbTransaction
+     * @param \Psr\Log\LoggerInterface                              $logger
      */
     public function __construct(
         Context $context,
@@ -137,7 +136,7 @@ class Response extends \Magento\Framework\App\Action\Action
         parent::__construct($context);
     }
 
-	public function execute()
+    public function execute()
     {
         $postData = $this->getRequest()->getPostValue();
         $this->_logger->debug("Callback | Response post data: " . json_encode($postData));
@@ -152,15 +151,12 @@ class Response extends \Magento\Framework\App\Action\Action
         /** @var \Magento\Framework\Controller\Result\Json $resultJson */
         $result = $this->_resultJsonFactory->create();
 
-        if (empty($transactionId)
-            || empty($timestamp) || empty($merchantId)
-            || empty($amount) || empty($currency)
-            || empty($secureHash)
+        if (empty($transactionId) || empty($timestamp) || empty($merchantId) || empty($amount) || empty($currency) || empty($secureHash)
         ) {
             $this->_logger->debug("Callback | Error: Order Invalid / empty params");
             return $result->setData(array(
-             'status' => 'error',
-             'message' => 'Invalid / Empty Transaction Params.'
+                    'status' => 'error',
+                    'message' => 'Invalid / Empty Transaction Params.'
             ));
         }
 
@@ -168,8 +164,8 @@ class Response extends \Magento\Framework\App\Action\Action
         if (!$this->is_valid_status($status)) {
             $this->_logger->debug("Callback | Error: Order $transactionId invalid status $status");
             return $result->setData(array(
-             'status' => 'error',
-             'message' => 'Invalid Transaction Status'
+                    'status' => 'error',
+                    'message' => 'Invalid Transaction Status'
             ));
         }
 
@@ -180,8 +176,8 @@ class Response extends \Magento\Framework\App\Action\Action
         if (!$order || empty($order) || !$order->getRealOrderId()) {
             $this->_logger->debug("Callback | Error: Order $transactionId not found");
             return $result->setData(array(
-                'status' => 'error',
-                'message' =>  "Order not found for transaction '$transactionId'"
+                    'status' => 'error',
+                    'message' => "Order not found for transaction '$transactionId'"
             ));
         }
 
@@ -194,19 +190,19 @@ class Response extends \Magento\Framework\App\Action\Action
                 $order->getEntityId()
             );
             $order->addStatusHistoryComment($message, "canceled / rejected")
-                  ->setIsCustomerNotified(false)->save();
+                ->setIsCustomerNotified(false)->save();
             $this->_logger->debug("Callback | Error: Order $transactionId rejected");
             return $result->setData(array(
-                'status' => 'rejected',
-                'message' => $message
+                    'status' => 'rejected',
+                    'message' => $message
             ));
         }
 
         if ($order->getStatus() !== Order::STATE_PENDING_PAYMENT) {
             $this->_logger->debug("Callback | Error: Order $transactionId already updated");
             return $result->setData(array(
-                'status' => __('error'),
-                'message' => __('Order already Updated.')
+                    'status' => __('error'),
+                    'message' => __('Order already Updated.')
             ));
         }
 
@@ -225,8 +221,8 @@ class Response extends \Magento\Framework\App\Action\Action
         if ($secureHash != $orderSecureHash) {
             $this->_logger->debug('Callback | Error: Hash does not match for order ' . $orderId);
             return $result->setData(array(
-                'status' => __('error'),
-                'message' => __('Invalid Transaction Params.')
+                    'status' => __('error'),
+                    'message' => __('Invalid Transaction Params.')
             ));
         }
 
@@ -235,8 +231,8 @@ class Response extends \Magento\Framework\App\Action\Action
             $invoice->register();
             $invoice->save();
             $transactionSave = $this->_transaction->addObject(
-                $invoice
-            )->addObject(
+                    $invoice
+                )->addObject(
                 $invoice->getOrder()
             );
             $transactionSave->save();
@@ -256,15 +252,14 @@ class Response extends \Magento\Framework\App\Action\Action
         $payment->setAdditionalInformation([
             \Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array(
                 'StatusId' => $status,
-                'Timestamp' =>  $orderTimestamp
+                'Timestamp' => $orderTimestamp
             )
         ]);
         $transaction = $payment->addTransaction(
             \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE
         );
         $payment->addTransactionCommentsToOrder(
-            $transaction,
-            $message
+            $transaction, $message
         );
         $payment->setParentTransactionId(null);
         $payment->save();
@@ -272,8 +267,8 @@ class Response extends \Magento\Framework\App\Action\Action
 
         $this->_logger->debug("Callback | Success: Order $orderId Accepted");
         return $result->setData(array(
-            'status' => 'success',
-            'message' => 'Transaction made successfully.'
+                'status' => 'success',
+                'message' => 'Transaction made successfully.'
         ));
     }
 
@@ -287,8 +282,7 @@ class Response extends \Magento\Framework\App\Action\Action
     protected function is_valid_status($status)
     {
         return in_array(
-            $status,
-            array(self::PAYMENT_STATUS_REJECTED, self::PAYMENT_STATUS_APPROVED)
+            $status, array(self::PAYMENT_STATUS_REJECTED, self::PAYMENT_STATUS_APPROVED)
         );
     }
 
@@ -300,11 +294,11 @@ class Response extends \Magento\Framework\App\Action\Action
     public function getMerchantId()
     {
         $merchantId = $this->_scopeConfig->getValue(
-            'payment/skash/merchant_id',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+            'payment/skash/merchant_id', \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         );
         return $this->_encryptor->decrypt($merchantId);
     }
+
     /**
      * Get the certificate from the module's backend configuration
      *
@@ -313,8 +307,7 @@ class Response extends \Magento\Framework\App\Action\Action
     public function getCertificate()
     {
         $certificate = $this->_scopeConfig->getValue(
-            'payment/skash/certificate',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+            'payment/skash/certificate', \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         );
         return $this->_encryptor->decrypt($certificate);
     }

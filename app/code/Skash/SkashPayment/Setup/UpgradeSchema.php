@@ -28,9 +28,9 @@ class UpgradeSchema implements UpgradeSchemaInterface
         $installer->startSetup();
         $installer->getConnection()->addColumn(
             $installer->getTable('sales_order'), 'skash_transaction_reference', [
-            'type'     => 'text',
+            'type' => 'text',
             'nullable' => true,
-            'comment'  => 'Skash Reference Transaction ID',
+            'comment' => 'Skash Reference Transaction ID',
             ]
         );
         $setup->endSetup();

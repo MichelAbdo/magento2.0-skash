@@ -15,13 +15,13 @@ interface CallbackInterface
      *
      * @api
      *
-     * @param string $transaction_id Transaction Id
-     * @param string $status         Transaction Status
-     * @param string $timestamp      Transaction Timestamp
-     * @param string $merchant_id    Merchant Id
-     * @param string $amount         Transaction Amount
-     * @param string $currency       Transaction Currency
-     * @param string $secure_hash    Secure Hash
+     * @param string $transaction_id    Transaction Id
+     * @param string $status            Transaction Status
+     * @param string $timestamp         Transaction Timestamp
+     * @param string $merchant_id       Merchant Id
+     * @param string $amount            Transaction Amount
+     * @param string $currency          Transaction Currency
+     * @param string $secure_hash       Secure Hash
      *
      * @return \Magento\Framework\Controller\Result\Json
      */
