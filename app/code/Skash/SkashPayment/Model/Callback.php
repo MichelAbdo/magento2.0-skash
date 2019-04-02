@@ -1,9 +1,11 @@
 <?php
+
 /**
  * Copyright © 2015 Magento. All rights reserved.
  * See COPYING.txt for license details.
  *
  */
+
 namespace Skash\SkashPayment\Model;
 
 use Skash\SkashPayment\Api\Skash\CallbackInterface;
@@ -284,7 +286,7 @@ class Callback implements CallbackInterface
      *
      * @api
      *
-     * @param string $transaction_id Transaction Id
+     * @param string $order_id Order id
      *
      * @return array[]
      */
@@ -312,14 +314,12 @@ class Callback implements CallbackInterface
 					'status' => 'changed',
 					'message' =>  'Accepted'
 				]];
-				break;
 			case Order::STATE_PENDING_PAYMENT:
 			default:
 				return [[
 					'status' => 'not-changed',
 					'message' =>  'Pending'
 				]];
-				break;
 		}
      }
 

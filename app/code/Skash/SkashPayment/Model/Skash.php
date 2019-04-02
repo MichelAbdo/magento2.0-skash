@@ -1,10 +1,12 @@
 <?php
+
 /**
  * Copyright © 2015 Magento. All rights reserved.
  * See COPYING.txt for license details.
  *
  * https://www.classyllama.com/blog/how-to-create-payment-method-magento-2
  */
+
 namespace Skash\SkashPayment\Model;
 
 use \Magento\Payment\Model\Method\AbstractMethod;
@@ -125,7 +127,7 @@ class Skash extends AbstractMethod
 		);
 	}
 
-	/**
+    /**
 	 * Return the transaction related fields required for the sKash API call
 	 *
 	 * @param \Magento\Sales\Model\Order $order Order object
@@ -199,7 +201,7 @@ class Skash extends AbstractMethod
 	}
 
 	/**
-	 * Get the callback url
+	 * Get the callback URL
 	 *
 	 * @return string
 	 */
@@ -212,7 +214,7 @@ class Skash extends AbstractMethod
 	}
 
 	/**
-	 * Get the Transaction url
+	 * Get the Transaction URL
 	 *
 	 * @return string
 	 */
@@ -388,7 +390,8 @@ class Skash extends AbstractMethod
      * Refund specified amount for payment
      *
      * @param \Magento\Framework\DataObject|InfoInterface $payment
-     * @param float $amount
+     * @param float                                       $amount
+     *
      * @return $this
      * @throws \Magento\Framework\Exception\LocalizedException
      * @api
@@ -449,12 +452,10 @@ class Skash extends AbstractMethod
             case 3:
                 $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transaction_id Timed-out, " . $result['ReturnText']);
 				throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction $transaction_id Timed-out.'));
-                break;
             case 7:
                 $this->_logger->debug("Reverse Payment - Success | Transaction $transaction_id canceled.");
                 $this->messageManager->addNotice(__("nsaction $transaction_id canceled."));
 				throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction $transaction_id Timed-out.'));
-                break;
             case -1:
                 $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transaction_id unsuccessful, " . $result['ReturnText']);
 				throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction $transaction_id unsuccessful.'));
@@ -462,9 +463,9 @@ class Skash extends AbstractMethod
             case 10:
                 $this->_logger->debug("Reverse Payment - Error | Invalid data submission for Transaction $transaction_id, " . $result['ReturnText']);
 				throw new \Magento\Framework\Exception\LocalizedException(__('Invalid data submission for Transaction $transaction_id.'));
-                break;
             default:
                 throw new \Magento\Framework\Exception\LocalizedException(__('Payment refunding error.'));
+        }
 
 		return $this;
     }
@@ -485,23 +486,23 @@ class Skash extends AbstractMethod
 	 *
 	 * @return string
 	 */
-	public function getBrowserType()
-	{
-            $ub = '';
-            $u_agent = $_SERVER['HTTP_USER_AGENT'];
-            if (preg_match('/Firefox/i', $u_agent) || preg_match('/FxiOS/', $u_agent)) {
-                $ub = "firefox";
-            } elseif (preg_match('/OPR/i',$u_agent)) {
-                $ub = "opera";
-            } elseif ((preg_match('/Chrome/i',$u_agent) && !preg_match('/Edge/i',$u_agent))
-                || preg_match('/CriOS/', $u_agent)
-            ) {
-                $ub = "chrome";
-                //$ub = "Chrome";
-            } else {
-                $ub = "safari";
-            }
-            return $ub;
-	}
+    public function getBrowserType()
+    {
+        $ub = '';
+        $u_agent = $_SERVER['HTTP_USER_AGENT'];
+        if (preg_match('/Firefox/i', $u_agent) || preg_match('/FxiOS/', $u_agent)) {
+            $ub = "firefox";
+        } elseif (preg_match('/OPR/i',$u_agent)) {
+            $ub = "opera";
+        } elseif ((preg_match('/Chrome/i',$u_agent) && !preg_match('/Edge/i',$u_agent))
+            || preg_match('/CriOS/', $u_agent)
+        ) {
+            $ub = "chrome";
+            //$ub = "Chrome";
+        } else {
+            $ub = "safari";
+        }
+        return $ub;
+    }
 
 }

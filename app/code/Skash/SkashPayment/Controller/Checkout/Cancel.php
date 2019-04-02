@@ -1,9 +1,11 @@
 <?php
+
 /**
  * Copyright © 2013-2017 Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  *
  */
+
 namespace Skash\SkashPayment\Controller\Checkout;
 
 use \Magento\Sales\Model\Order;
@@ -44,8 +46,14 @@ class Cancel extends \Magento\Framework\App\Action\Action
     protected $_skashPaymentMethod;
 
     /**
-    *
-    */
+     * @param \Magento\Framework\App\Action\Context         $context
+     * @param \Magento\Checkout\Model\Session               $checkoutSession
+     * @param \Magento\Sales\Model\OrderFactory             $orderFactory
+     * @param \Skash\SkashPayment\Model\Skash               $_skashPaymentMethod
+     * @param \Magento\Paypal\Helper\Checkout               $checkoutHelper
+     * @param \Magento\Sales\Api\OrderManagementInterface   $orderManagement
+     * @param \Psr\Log\LoggerInterface                      $logger
+     */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \Magento\Checkout\Model\Session $checkoutSession,

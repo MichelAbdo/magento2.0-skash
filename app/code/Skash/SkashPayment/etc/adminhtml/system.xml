@@ -33,8 +33,8 @@
                     <validate>required-entry</validate>
                 </field>
                 <field id="qr_size" translate="label" type="select" sortOrder="45" showInDefault="1" showInWebsite="1" showInStore="0">
-                   <label>QR size</label>
-                   <source_model>Skash\SkashPayment\Model\Config\QRSize</source_model>
+                    <label>QR size</label>
+                    <source_model>Skash\SkashPayment\Model\Config\QRSize</source_model>
                 </field>
                 <field id="order_status" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>New Order Status</label>

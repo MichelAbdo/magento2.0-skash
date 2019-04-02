@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright © 2013-2017 Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
@@ -7,6 +8,7 @@
  * either submit the data through an api call to skash to get the QR and display it
  * or call the app using a deeplink if on mobile
  */
+
 namespace Skash\SkashPayment\Controller\Checkout;
 
 /**
@@ -23,7 +25,6 @@ class Transaction extends \Magento\Framework\App\Action\Action
      * @var \Magento\Sales\Model\OrderFactory
      */
     protected $_orderFactory;
-
 
     /**
      * @var \Magento\Paypal\Helper\Checkout

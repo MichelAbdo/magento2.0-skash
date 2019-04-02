@@ -1,8 +1,10 @@
 <?php
+
 /**
  * Copyright © 2013-2017 Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Skash\SkashPayment\Controller\Checkout;
 
 use \Magento\Sales\Model\Order;
@@ -291,7 +293,7 @@ class Response extends \Magento\Framework\App\Action\Action
     }
 
     /**
-     * Get the merchant id from the modules' backend configiguration
+     * Get the merchant id from the module's backend configuration
      *
      * @return string Merchant id
      */
@@ -304,7 +306,7 @@ class Response extends \Magento\Framework\App\Action\Action
         return $this->_encryptor->decrypt($merchantId);
     }
     /**
-     * Get the certificate from the modules' backend configiguration
+     * Get the certificate from the module's backend configuration
      *
      * @return string Merchant id
      */
@@ -316,7 +318,5 @@ class Response extends \Magento\Framework\App\Action\Action
         );
         return $this->_encryptor->decrypt($certificate);
     }
-
-
 
 }

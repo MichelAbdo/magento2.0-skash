@@ -1,12 +1,15 @@
 <?php
-namespace Skash\SkashPayment\Api\Skash;
+
 /**
- * https://inchoo.net/magento-2/magento-2-custom-api/
+ * Copyright © 2013-2017 Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
  */
-// @todo change documentation
+
+namespace Skash\SkashPayment\Api\Skash;
 
 interface CallbackInterface
 {
+
     /**
      * Updates the order status if the sKash transaction is successful
      *
@@ -22,24 +25,25 @@ interface CallbackInterface
      *
      * @return \Magento\Framework\Controller\Result\Json
      */
-	public function response(
-          $transaction_id,
-          $status,
-          $timestamp,
-          $merchant_id,
-          $amount,
-          $currency,
-          $secure_hash
-     );
+    public function response(
+        $transaction_id,
+        $status,
+        $timestamp,
+        $merchant_id,
+        $amount,
+        $currency,
+        $secure_hash
+    );
 
     /**
      * Checks if the order status changed
      *
      * @api
      *
-     * @param string $transaction_id Transaction Id
+     * @param string $order_id Order Id
      *
      * @return array[]
      */
-     public function status_check($order_id);
+    public function status_check($order_id);
+
 }
