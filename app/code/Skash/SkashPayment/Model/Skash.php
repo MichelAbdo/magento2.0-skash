@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Copyright © 2015 Magento. All rights reserved.
- * See COPYING.txt for license details.
+ * Skash Payment Model
  *
- * https://www.classyllama.com/blog/how-to-create-payment-method-magento-2
+ * @author  Michel Abdo <michel.f.abdo@gmail.com>
+ * @license https://framework.zend.com/license  New BSD License
  */
 
 namespace Skash\SkashPayment\Model;
@@ -26,20 +26,37 @@ use \Magento\Framework\Model\ResourceModel\AbstractResource;
 use \Magento\Framework\Data\Collection\AbstractDb;
 
 /**
- * sKash payment method model
+ * SKash payment method model
  */
 class Skash extends AbstractMethod
 {
 
+
     /**
-     * Skash payment status numbers
+     * Skash payment status success
+     *
+     * @var integer
      */
     const PAYMENT_STATUS_SUCCESS = 2;
+
+    /**
+     * Skash payment status error
+     *
+     * @var integer
+     */
     const PAYMENT_STATUS_ERROR = -1;
+
+    /**
+     * Skash payment status invalid data
+     *
+     * @var integer
+     */
     const PAYMENT_STATUS_INVALID_DATA = 10;
 
     /**
-     * skash Payment Code
+     * Skash Payment Code
+     *
+     * @var string
      */
     const PAYMENT_CODE = 'skash';
 
@@ -56,38 +73,103 @@ class Skash extends AbstractMethod
      * @var bool
      */
     protected $_isOffline = false;
+
+    /**
+     * Is Gateway
+     *
+     * @var bool
+     */
     protected $_isGateway = true;
+
+    /**
+     * Can Capture
+     *
+     * @var bool
+     */
     protected $_canCapture = true;
-    protected $_canCapturePartial = true;
+
+    /**
+     * Can Capture Partial
+     *
+     * @var bool
+     */
+    protected $_canCapturePartial = false;
+
+    /**
+     * Can Refund
+     *
+     * @var bool
+     */
     protected $_canRefund = true;
-    protected $_canRefundInvoicePartial = true;
+
+    /**
+     * Can Refund Invoice Partial
+     *
+     * @var bool
+     */
+    protected $_canRefundInvoicePartial = false;
+
+    /**
+     * Is Initialize Needed
+     *
+     * @var bool
+     */
     protected $_isInitializeNeeded = true;
+
+    /**
+     * Order object
+     *
+     * @var \Magento\Sales\Model\Order
+     */
     protected $_order;
+
+    /**
+     * URL Builder
+     *
+     * @var bool
+     */
     protected $_urlBuilder;
+
+    /**
+     * OrderFactory
+     *
+     * @var OrderFactory
+     */
     protected $_orderFactory;
+
+    /**
+     * Logger
+     *
+     * @var \Psr\Log\LoggerInterface
+     */
     protected $_logger;
 
     /**
+     * Encryptor
+     *
      * @var \Magento\Framework\Encryption\EncryptorInterface
      */
     protected $_encryptor;
 
+
     /**
-     * @param \Magento\Framework\Model\Context                          $context
-     * @param \Magento\Framework\Registry                               $registry
-     * @param \Magento\Framework\Api\ExtensionAttributesFactory         $extensionFactory
-     * @param \Magento\Framework\Api\AttributeValueFactory              $customAttributeFactory
-     * @param \Magento\Payment\Helper\Data                              $paymentData
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface        $scopeConfig
-     * @param \Magento\Payment\Model\Method\Logger                      $logger
-     * @param \Magento\Framework\Module\ModuleListInterface             $moduleList
-     * @param \Magento\Framework\Stdlib\DateTime\TimezoneInterface      $localeDate
-     * @param \Magento\Sales\Model\OrderFactory                         $orderFactory
-     * @param \Magento\Framework\Encryption\EncryptorInterface          $encryptor
-     * @param \Magento\Framework\UrlInterface                           $urlBuilder
-     * @param \Magento\Framework\Model\ResourceModel\AbstractResource   $resourceCollection
-     * @param \Magento\Framework\Data\Collection\AbstractDb             $resourceCollection
-     * @param array                                                     $data
+     * Construct
+     *
+     * @param \Magento\Framework\Model\Context                        $context                Context
+     * @param \Magento\Framework\Registry                             $registry               Registry
+     * @param \Magento\Framework\Api\ExtensionAttributesFactory       $extensionFactory       Extension Attributes Factory
+     * @param \Magento\Framework\Api\AttributeValueFactory            $customAttributeFactory Attribute Value Factory
+     * @param \Magento\Payment\Helper\Data                            $paymentData            Data
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface      $scopeConfig            Scope Config Interface
+     * @param \Magento\Payment\Model\Method\Logger                    $logger                 Logger
+     * @param \Magento\Framework\Module\ModuleListInterface           $moduleList             Module List Interface
+     * @param \Magento\Framework\Stdlib\DateTime\TimezoneInterface    $localeDate             Timezone Interface
+     * @param \Magento\Sales\Model\OrderFactory                       $orderFactory           Order Factory
+     * @param \Magento\Framework\Encryption\EncryptorInterface        $encryptor              Encryptor Interface
+     * @param \Magento\Framework\UrlInterface                         $urlBuilder             Url Interface
+     * @param \Magento\Framework\Model\ResourceModel\AbstractResource $resource               Abstract Resource
+     * @param \Magento\Framework\Data\Collection\AbstractDb           $resourceCollection     Abstract Db
+     * @param array                                                   $data                   Data
      */
     public function __construct(
         Context $context,
@@ -122,7 +204,9 @@ class Skash extends AbstractMethod
             $resourceCollection,
             $data
         );
-    }
+
+    }//end __construct()
+
 
     /**
      * Return the transaction related fields required for the sKash API call
@@ -141,8 +225,8 @@ class Skash extends AbstractMethod
         $orderCurrency = $order->getBaseCurrencyCode();
         $orderTimestamp = strtotime($order->getCreatedAt());
         $additionalInfo = '';
-        $currentTimestamp = round(microtime(true) * 1000) - strtotime(date("1-1-1970"));
-        $hashData = $orderId . $currentTimestamp . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $additionalInfo . $certificate;
+        $currentTimestamp = (round(microtime(true) * 1000) - strtotime(date("1-1-1970")));
+        $hashData = $orderId.$currentTimestamp.$orderAmount.$orderCurrency.$callbackURL.$orderTimestamp.$additionalInfo.$certificate;
         $secureHash = base64_encode(hash('sha512', $hashData, true));
 
         $fields = array(
@@ -154,11 +238,14 @@ class Skash extends AbstractMethod
             'TS' => (string) $currentTimestamp,
             'TranTS' => (string) $orderTimestamp,
             'MerchantID' => $merchantId,
-            'AdditionalInfo' => $additionalInfo
+            'AdditionalInfo' => $additionalInfo,
         );
-        $this->_logger->debug("QR Transaction | Fields: " . json_encode($fields));
+        $this->_logger->debug("QR Transaction | Fields: ".json_encode($fields));
+
         return $fields;
-    }
+
+    }//end getRequestFields()
+
 
     /**
      * Get the sKash application deeplink and its related transaction fields
@@ -172,14 +259,14 @@ class Skash extends AbstractMethod
         $appURL = 'skashpay://skash.com/skash=?';
         $merchantId = $this->getMerchantId();
         $certificate = $this->getCertificate();
-        $callbackURL = $this->getCallbackUrl() . '?source=mobile';
+        $callbackURL = $this->getCallbackUrl().'?source=mobile';
         $orderId = $order->getRealOrderId();
         $orderAmount = (double) $order->getBaseGrandTotal();
         $orderCurrency = $order->getBaseCurrencyCode();
         $orderTimestamp = strtotime($order->getCreatedAt());
-        $currentURL = $this->getTransactionUrl() . '?data=' . $orderId;
+        $currentURL = $this->getTransactionUrl().'?data='.$orderId;
         $browserType = $this->getBrowserType();
-        $mobileHashData = $orderId . $merchantId . $orderAmount . $orderCurrency . $callbackURL . $orderTimestamp . $certificate;
+        $mobileHashData = $orderId.$merchantId.$orderAmount.$orderCurrency.$callbackURL.$orderTimestamp.$certificate;
         $mobileSecureHash = base64_encode(hash('sha512', $mobileHashData, true));
         $fields = array(
             'strTranID' => $orderId,
@@ -190,11 +277,14 @@ class Skash extends AbstractMethod
             'TS' => (string) $orderTimestamp,
             'secureHash' => $mobileSecureHash,
             'currentURL' => $currentURL,
-            'browsertype' => $browserType
+            'browsertype' => $browserType,
         );
-        $this->_logger->debug("Mobile Transaction | Deeplink: " . $appURL . json_encode($fields));
-        return $appURL . json_encode($fields);
-    }
+        $this->_logger->debug("Mobile Transaction | Deeplink: ".$appURL.json_encode($fields));
+
+        return $appURL.json_encode($fields);
+
+    }//end getDeeplinkUrl()
+
 
     /**
      * Get the callback URL
@@ -204,9 +294,12 @@ class Skash extends AbstractMethod
     public function getCallbackUrl()
     {
         return $this->_urlBuilder->getUrl(
-                'skash/checkout/response', ['_secure' => true]
+            'skash/checkout/response',
+            ['_secure' => true]
         );
-    }
+
+    }//end getCallbackUrl()
+
 
     /**
      * Get the Transaction URL
@@ -216,9 +309,12 @@ class Skash extends AbstractMethod
     public function getTransactionUrl()
     {
         return $this->_urlBuilder->getUrl(
-                'skash/checkout/transaction', ['_secure' => true]
+            'skash/checkout/transaction',
+            ['_secure' => true]
         );
-    }
+
+    }//end getTransactionUrl()
+
 
     /**
      * Make an API call to obtain the sKash QR
@@ -229,17 +325,12 @@ class Skash extends AbstractMethod
      */
     public function getTransactionQR($requestFields)
     {
-        $data_string = json_encode($requestFields);
-
+        $dataString = json_encode($requestFields);
         $url = $this->getQRTransactionUrl();
-
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json'
-            )
-        );
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $dataString);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         $result = curl_exec($ch);
@@ -255,42 +346,43 @@ class Skash extends AbstractMethod
             'Flag' => $result->Flag,
             'TranID' => $result->TranID,
             'PictureURL' => $result->PictureURL,
-            'ReturnText' => $result->ReturnText
+            'ReturnText' => $result->ReturnText,
         );
 
-        $this->_logger->debug("QR Transaction | Response: " . json_encode($result));
+        $this->_logger->debug("QR Transaction | Response: ".json_encode($result));
 
         return $result;
-    }
+
+    }//end getTransactionQR()
+
 
     /**
      * Make an API call to cancel the QR Payment using the transaction id
      *
-     * @param array $transaction_id QR transaction id
+     * @param array $transactionId QR transaction id
      *
      * @return array
      */
-    public function cancelQRPayment($transaction_id)
+    public function cancelQRPayment($transactionId)
     {
-        $timestamp = round(microtime(true) * 1000) - strtotime(date("1-1-1970"));
-        $hash_data = $timestamp . $transaction_id . $this->getCertificate();
-        $secure_hash = base64_encode(hash('sha512', $hash_data, true));
-        $data_string = json_encode([
-            'TranID' => $transaction_id,
-            'TS' => $timestamp,
-            'MerchantID' => $this->getMerchantId(),
-            'SecureHash' => $secure_hash
-        ]);
-        $this->_logger->debug("Cancel QR Payment | Request Body: " . $data_string);
-
-        $url = dirname($this->getQRTransactionUrl()) . '/CancelQRPayment';
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json'
+        $timestamp = (round(microtime(true) * 1000) - strtotime(date("1-1-1970")));
+        $hashData = $timestamp.$transactionId.$this->getCertificate();
+        $secureHash = base64_encode(hash('sha512', $hashData, true));
+        $dataString = json_encode(
+            array(
+                'TranID' => $transactionId,
+                'TS' => $timestamp,
+                'MerchantID' => $this->getMerchantId(),
+                'SecureHash' => $secureHash,
             )
         );
+        $this->_logger->debug("Cancel QR Payment | Request Body: ".$dataString);
+
+        $url = dirname($this->getQRTransactionUrl()).'/CancelQRPayment';
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $dataString);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         $result = curl_exec($ch);
@@ -305,13 +397,15 @@ class Skash extends AbstractMethod
         $result = array(
             'Flag' => $result->Flag,
             'ReferenceNo' => $result->ReferenceNo,
-            'ReturnText' => $result->ReturnText
+            'ReturnText' => $result->ReturnText,
         );
 
-        $this->_logger->debug("Cancel QR Payment | Response: " . json_encode($result));
+        $this->_logger->debug("Cancel QR Payment | Response: ".json_encode($result));
 
         return $result;
-    }
+
+    }//end cancelQRPayment()
+
 
     /**
      * Get the merchant id from the module's backend configuration
@@ -321,7 +415,9 @@ class Skash extends AbstractMethod
     public function getMerchantId()
     {
         return $this->_encryptor->decrypt($this->getConfigData('merchant_id'));
-    }
+
+    }//end getMerchantId()
+
 
     /**
      * Get the merchant certificate from the module's backend configuration
@@ -331,7 +427,9 @@ class Skash extends AbstractMethod
     public function getCertificate()
     {
         return $this->_encryptor->decrypt($this->getConfigData('certificate'));
-    }
+
+    }//end getCertificate()
+
 
     /**
      * Get the sKash QR URL
@@ -341,7 +439,9 @@ class Skash extends AbstractMethod
     public function getQRTransactionUrl()
     {
         return $this->_encryptor->decrypt($this->getConfigData('qr_api'));
-    }
+
+    }//end getQRTransactionUrl()
+
 
     /**
      * Get the sKash QR Size
@@ -351,7 +451,9 @@ class Skash extends AbstractMethod
     public function getQRSize()
     {
         return $this->getConfigData('qr_size');
-    }
+
+    }//end getQRSize()
+
 
     /**
      * Get initialized flag status
@@ -361,11 +463,17 @@ class Skash extends AbstractMethod
     public function isInitializeNeeded()
     {
         return true;
-    }
+
+    }//end isInitializeNeeded()
+
 
     /**
-     * @param string $paymentAction
-     * @param object $stateObject
+     * Initialize
+     *
+     * @param string $paymentAction Payment Action
+     * @param object $stateObject   State Object
+     *
+     * @return void
      */
     public function initialize($paymentAction, $stateObject)
     {
@@ -378,13 +486,15 @@ class Skash extends AbstractMethod
         $stateObject->setStatus(\Magento\Sales\Model\Order::STATE_PENDING_PAYMENT);
         $stateObject->setIsNotified(false);
         $stateObject->setCustomerNoteNotify(false);
-    }
+
+    }//end initialize()
+
 
     /**
      * Refund specified amount for payment
      *
-     * @param \Magento\Framework\DataObject|InfoInterface $payment
-     * @param float                                       $amount
+     * @param \Magento\Framework\DataObject|InfoInterface $payment payment
+     * @param float                                       $amount  amount
      *
      * @return $this
      * @throws \Magento\Framework\Exception\LocalizedException
@@ -398,33 +508,32 @@ class Skash extends AbstractMethod
             throw new \Magento\Framework\Exception\LocalizedException(__('Invalid transaction ID.'));
         }
 
-        $transaction_id = $payment->getParentTransactionId();
-        $timestamp = round(microtime(true) * 1000) - strtotime(date("1-1-1970"));
-        $hash_data = $timestamp . $transaction_id . $this->getCertificate();
-        $secure_hash = base64_encode(hash('sha512', $hash_data, true));
-        $data_string = json_encode([
-            'TranID' => $transaction_id,
-            'TS' => $timestamp,
-            'MerchantID' => $this->getMerchantId(),
-            'SecureHash' => $secure_hash
-        ]);
-        $this->_logger->debug("Reverse Payment | Request Body: " . $data_string);
-
-        $url = dirname($this->getQRTransactionUrl()) . '/ReverseQRPayment';
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json'
+        $transactionId = $payment->getParentTransactionId();
+        $timestamp = (round(microtime(true) * 1000) - strtotime(date("1-1-1970")));
+        $hashData = $timestamp.$transactionId.$this->getCertificate();
+        $secureHash = base64_encode(hash('sha512', $hashData, true));
+        $dataString = json_encode(
+            array(
+                'TranID' => $transactionId,
+                'TS' => $timestamp,
+                'MerchantID' => $this->getMerchantId(),
+                'SecureHash' => $secureHash,
             )
         );
+        $this->_logger->debug("Reverse Payment | Request Body: ".$dataString);
+
+        $url = dirname($this->getQRTransactionUrl()).'/ReverseQRPayment';
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $dataString);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         $result = curl_exec($ch);
         curl_close($ch);
 
         if (!$result || !json_decode($result)) {
-            $this->_logger->debug("Reverse Payment | Error while establishing connection for transaction: " . $transaction_id);
+            $this->_logger->debug("Reverse Payment | Error while establishing connection for transaction: ".$transactionId);
             throw new \Magento\Framework\Exception\LocalizedException(__('Error while establishing connection.'));
         }
 
@@ -433,36 +542,38 @@ class Skash extends AbstractMethod
         $result = array(
             'Flag' => $result->Flag,
             'ReferenceNo' => $result->ReferenceNo,
-            'ReturnText' => $result->ReturnText
+            'ReturnText' => $result->ReturnText,
         );
 
-        $this->_logger->debug("Reverse Payment | Response: " . json_encode($result));
+        $this->_logger->debug("Reverse Payment | Response: ".json_encode($result));
 
         switch ($result['Flag']) {
-            case 1:
-                $this->_logger->debug("Reverse Payment - Success | Transaction $transaction_id reversed successfully, " . $result['ReturnText']);
-                $this->messageManager->addNotice(__("The sKash Transaction $transaction_id was reversed successfully."));
-                break;
-            case 3:
-                $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transaction_id Timed-out, " . $result['ReturnText']);
-                throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction $transaction_id Timed-out.'));
-            case 7:
-                $this->_logger->debug("Reverse Payment - Success | Transaction $transaction_id canceled.");
-                $this->messageManager->addNotice(__("nsaction $transaction_id canceled."));
-                throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction $transaction_id Timed-out.'));
-            case -1:
-                $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transaction_id unsuccessful, " . $result['ReturnText']);
-                throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction $transaction_id unsuccessful.'));
-                break;
-            case 10:
-                $this->_logger->debug("Reverse Payment - Error | Invalid data submission for Transaction $transaction_id, " . $result['ReturnText']);
-                throw new \Magento\Framework\Exception\LocalizedException(__('Invalid data submission for Transaction $transaction_id.'));
-            default:
-                throw new \Magento\Framework\Exception\LocalizedException(__('Payment refunding error.'));
-        }
+        case 1:
+            $this->_logger->debug("Reverse Payment - Success | Transaction $transactionId reversed successfully, ".$result['ReturnText']);
+            $this->messageManager->addNotice(__("The sKash Transaction $transactionId was reversed successfully."));
+            break;
+        case 3:
+            $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transactionId Timed-out, ".$result['ReturnText']);
+            throw new \Magento\Framework\Exception\LocalizedException(__("Reverse Transaction $transactionId Timed-out."));
+        case 7:
+            $this->_logger->debug("Reverse Payment - Success | Transaction $transactionId canceled.");
+            $this->messageManager->addNotice(__("Transaction $transactionId canceled."));
+            throw new \Magento\Framework\Exception\LocalizedException(__("Reverse Transaction $transactionId Timed-out."));
+        case -1:
+            $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transactionId unsuccessful, ".$result['ReturnText']);
+            throw new \Magento\Framework\Exception\LocalizedException(__("Reverse Transaction $transactionId unsuccessful."));
+            break;
+        case 10:
+            $this->_logger->debug("Reverse Payment - Error | Invalid data submission for Transaction $transactionId, ".$result['ReturnText']);
+            throw new \Magento\Framework\Exception\LocalizedException(__("Invalid data submission for Transaction $transactionId."));
+        default:
+            throw new \Magento\Framework\Exception\LocalizedException(__('Payment refunding error.'));
+        }//end switch
 
         return $this;
-    }
+
+    }//end refund()
+
 
     /**
      * Get config action to process initialization
@@ -472,8 +583,11 @@ class Skash extends AbstractMethod
     public function getConfigPaymentAction()
     {
         $paymentAction = $this->getConfigData('payment_action');
+
         return empty($paymentAction) ? true : $paymentAction;
-    }
+
+    }//end getConfigPaymentAction()
+
 
     /**
      * Get browser type
@@ -483,19 +597,21 @@ class Skash extends AbstractMethod
     public function getBrowserType()
     {
         $ub = '';
-        $u_agent = $_SERVER['HTTP_USER_AGENT'];
-        if (preg_match('/Firefox/i', $u_agent) || preg_match('/FxiOS/', $u_agent)) {
+        $uAgent = $_SERVER['HTTP_USER_AGENT'];
+        if (preg_match('/Firefox/i', $uAgent) || preg_match('/FxiOS/', $uAgent)) {
             $ub = "firefox";
-        } elseif (preg_match('/OPR/i', $u_agent)) {
+        } else if (preg_match('/OPR/i', $uAgent)) {
             $ub = "opera";
-        } elseif ((preg_match('/Chrome/i', $u_agent) && !preg_match('/Edge/i', $u_agent)) || preg_match('/CriOS/', $u_agent)
+        } else if ((preg_match('/Chrome/i', $uAgent) && !preg_match('/Edge/i', $uAgent)) || preg_match('/CriOS/', $uAgent)
         ) {
             $ub = "chrome";
-            //$ub = "Chrome";
         } else {
             $ub = "safari";
         }
-        return $ub;
-    }
 
-}
+        return $ub;
+
+    }//end getBrowserType()
+
+
+}//end class

@@ -1,8 +1,10 @@
 <?php
 
 /**
- * Copyright © 2015 Magento. All rights reserved.
- * See COPYING.txt for license details.
+ * QR sizes
+ *
+ * @author  Michel Abdo <michel.f.abdo@gmail.com>
+ * @license https://framework.zend.com/license  New BSD License
  */
 
 namespace Skash\SkashPayment\Model\Config;
@@ -15,13 +17,30 @@ use \Magento\Framework\Option\ArrayInterface;
 class QRSize implements ArrayInterface
 {
 
+
+    /**
+     * The Skash QR dropdown values
+     *
+     * @return array
+     */
     public function toOptionArray()
     {
-        return [
-            ['value' => 'skash-large', 'label' => __('Large')],
-            ['value' => 'skash-medium', 'label' => __('Medium')],
-            ['value' => 'skash-small', 'label' => __('Small')]
-        ];
-    }
+        return array(
+            array(
+                'value' => 'skash-large',
+                'label' => __('Large'),
+            ),
+            array(
+                'value' => 'skash-medium',
+                'label' => __('Medium'),
+            ),
+            array(
+                'value' => 'skash-small',
+                'label' => __('Small'),
+            ),
+        );
 
-}
+    }//end toOptionArray()
+
+
+}//end class

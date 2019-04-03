@@ -1,11 +1,10 @@
 <?php
 
 /**
- * Copyright © 2013-2017 Magento, Inc. All rights reserved.
- * See COPYING.txt for license details.
+ * Skash Transaction Controller
  *
- * After checkout, the js redirection will forward to the transaction controller which will
- * either submit the data through an api call to skash to get the QR and display it
+ * After checkout, the JS redirection will forward to the transaction controller which will
+ * either submit the data through an API call to sKash to get the QR and display it
  * or call the app using a deeplink if on mobile
  */
 

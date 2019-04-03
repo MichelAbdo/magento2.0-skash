@@ -2,6 +2,9 @@
 
 /**
  * Add Skash transaction reference to the orders table
+ *
+ * @author  Michel Abdo <michel.f.abdo@gmail.com>
+ * @license https://framework.zend.com/license  New BSD License
  */
 
 namespace Skash\SkashPayment\Setup;
@@ -11,14 +14,17 @@ use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\SchemaSetupInterface;
 
 /**
- * @codeCoverageIgnore
+ * Add Skash transaction reference to the orders table
  */
 class UpgradeSchema implements UpgradeSchemaInterface
 {
 
+
     /**
-     * {@inheritdoc}
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * Upgrade script
+     *
+     * @param SchemaSetupInterface   $setup   Setup
+     * @param ModuleContextInterface $context Context
      */
     public function upgrade(
         SchemaSetupInterface $setup,
@@ -27,13 +33,17 @@ class UpgradeSchema implements UpgradeSchemaInterface
         $installer = $setup;
         $installer->startSetup();
         $installer->getConnection()->addColumn(
-            $installer->getTable('sales_order'), 'skash_transaction_reference', [
-            'type' => 'text',
-            'nullable' => true,
-            'comment' => 'Skash Reference Transaction ID',
+            $installer->getTable('sales_order'),
+            'skash_transaction_reference',
+            [
+                'type' => 'text',
+                'nullable' => true,
+                'comment' => 'Skash Reference Transaction ID',
             ]
         );
         $setup->endSetup();
-    }
 
-}
+    }//end upgrade()
+
+
+}//end class

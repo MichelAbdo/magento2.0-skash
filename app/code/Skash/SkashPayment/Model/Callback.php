@@ -1,9 +1,10 @@
 <?php
 
 /**
- * Copyright © 2015 Magento. All rights reserved.
- * See COPYING.txt for license details.
+ * Skash Callback Model
  *
+ * @author  Michel Abdo <michel.f.abdo@gmail.com>
+ * @license https://framework.zend.com/license  New BSD License
  */
 
 namespace Skash\SkashPayment\Model;
@@ -23,85 +24,127 @@ use \Magento\Framework\App\Config\ScopeConfigInterface;
 use \Magento\Framework\DB\Transaction as DbTransaction;
 use \Magento\Framework\Controller\Result\JsonFactory;
 
+/**
+ * Callback Class
+ */
 class Callback implements CallbackInterface
 {
 
+
+    /**
+     * Skash payment status rejected
+     *
+     * @var integer
+     */
     const PAYMENT_STATUS_REJECTED = 0;
+
+    /**
+     * Skash payment status approved
+     *
+     * @var integer
+     */
     const PAYMENT_STATUS_APPROVED = 1;
 
     /**
+     * Order Factory
+     *
      * @var \Magento\Sales\Model\OrderFactory
      */
     protected $_orderFactory;
 
     /**
+     * Order Repository Interface
+     *
      * @var \Magento\Sales\Api\OrderRepositoryInterface
      */
     protected $_orderManagement;
 
     /**
+     * Invoice Service
+     *
      * @var \Magento\Sales\Model\Service\InvoiceService
      */
     protected $_invoiceService;
 
     /**
+     * Transaction
+     *
      * @var \Magento\Framework\DB\Transaction
      */
     protected $_transaction;
 
     /**
+     * Checkout
+     *
      * @var \Magento\Paypal\Helper\Checkout
      */
     protected $_checkoutHelper;
 
     /**
+     * Logger Interface
+     *
      * @var \Psr\Log\LoggerInterface
      */
     protected $_logger;
 
     /**
+     * Skash Payment Model
+     *
      * @var \Skash\SkashPayment\Model\Skash
      */
     protected $_sKashFactory;
 
     /**
+     * Order Sender
+     *
      * @var \Magento\Sales\Model\Order\Email\Sender\OrderSender
      */
     protected $_orderSender;
 
     /**
+     * Invoice Sender
+     *
      * @var \Magento\Sales\Model\Order\Email\Sender\InvoiceSender
      */
     protected $_invoiceSender;
 
     /**
+     * Encryptor Interface
+     *
      * @var \Magento\Framework\Encryption\EncryptorInterface
      */
     protected $_encryptor;
 
     /**
+     * Encryptor Interface
+     *
      * @var \Magento\Framework\Encryption\EncryptorInterface
      */
     protected $_scopeConfig;
 
     /**
+     * Json Factory
+     *
      * @var \Magento\Framework\Controller\Result\JsonFactory
      */
     protected $_resultJsonFactory;
 
+
     /**
-     * @param \Magento\Framework\Model\Context                      $context
-     * @param \Magento\Sales\Model\OrderFactory                     $orderFactory
-     * @param \Skash\SkashPayment\Model\Skash                       $sKashFactory
-     * @param \Magento\Paypal\Helper\Checkout                       $checkoutHelper
-     * @param \Magento\Sales\Api\OrderManagementInterface           $orderManagement
-     * @param \Magento\Sales\Model\Service\InvoiceService           $invoiceService
-     * @param \Magento\Sales\Model\Order\Email\Sender\OrderSende    $orderSender
-     * @param \Magento\Sales\Model\Order\Email\Sender\InvoiceSender	$invoiceSender
-     * @param \Magento\Framework\Encryption\EncryptorInterface      $encryptor
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface    $scopeConfig
-     * @param \Magento\Framework\Controller\Result\JsonFactory      $resultJsonFactory
-     * @param \Magento\Framework\DB\Transaction                     $dbTransaction
+     * Construct
+     *
+     * @param \Magento\Framework\Model\Context                      $context           Context
+     * @param \Magento\Sales\Model\OrderFactory                     $orderFactory      Order Factory
+     * @param \Skash\SkashPayment\Model\Skash                       $sKashFactory      Skash
+     * @param \Magento\Paypal\Helper\Checkout                       $checkoutHelper    Checkout
+     * @param \Magento\Sales\Api\OrderManagementInterface           $orderManagement   Order Management Interface
+     * @param \Magento\Sales\Model\Service\InvoiceService           $invoiceService    Invoice Service
+     * @param \Magento\Sales\Model\Order\Email\Sender\OrderSende    $orderSender       Order Sender
+     * @param \Magento\Sales\Model\Order\Email\Sender\InvoiceSender $invoiceSender     Invoice Sender
+     * @param \Magento\Framework\Encryption\EncryptorInterface      $encryptor         Encryptor Interface
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface    $scopeConfig       Scope Config Interface
+     * @param \Magento\Framework\Controller\Result\JsonFactory      $resultJsonFactory Json Factory
+     * @param \Magento\Framework\DB\Transaction                     $dbTransaction     Transaction
      */
     public function __construct(
         Context $context,
@@ -129,20 +172,20 @@ class Callback implements CallbackInterface
         $this->_encryptor = $encryptor;
         $this->_scopeConfig = $scopeConfig;
         $this->_resultJsonFactory = $resultJsonFactory;
-    }
+
+    }//end __construct()
+
 
     /**
      * Update the database order status if the transaction was successful
      *
-     * @api
-     *
-     * @param string $transaction_id    Transaction Id
-     * @param string $status            Transaction Status
-     * @param string $timestamp         Transaction Timestamp
-     * @param string $merchant_id       Merchant Id
-     * @param string $amount            Transaction Amount
-     * @param string $currency          Transaction Currency
-     * @param string $secure_hash       Secure Hash
+     * @param string $transaction_id Transaction Id
+     * @param string $status         Transaction Status
+     * @param string $timestamp      Transaction Timestamp
+     * @param string $merchant_id    Merchant Id
+     * @param string $amount         Transaction Amount
+     * @param string $currency       Transaction Currency
+     * @param string $secure_hash    Secure Hash
      *
      * @return \Magento\Framework\Controller\Result\Json
      */
@@ -156,28 +199,31 @@ class Callback implements CallbackInterface
         $secure_hash
     ) {
         $this->_logger->debug("Callback | Inside Response Action");
-        $this->_logger->debug("Callback | tansaction id" . $transaction_id);
-        $this->_logger->debug("Callback | status" . $status);
+        $this->_logger->debug("Callback | tansaction id".$transaction_id);
+        $this->_logger->debug("Callback | status".$status);
 
-        if (
-            empty($transaction_id) || empty($status) || empty($timestamp)
+        if (empty($transaction_id) || empty($status) || empty($timestamp)
             || empty($merchant_id) || empty($amount) || empty($currency)
             || empty($secure_hash)
         ) {
             $this->_logger->debug("Callback | Error: Order $transaction_id Invalid / empty params");
-            return [[
-                'status' => 'error',
-                'message' => 'Invalid / Empty Transaction Params.'
-            ]];
+            return array(
+                array(
+                    'status' => 'error',
+                    'message' => 'Invalid / Empty Transaction Params.',
+                ),
+            );
         }
 
         // Validate the status' value
-        if (!$this->is_valid_status($status)) {
+        if (!$this->isValidStatus($status)) {
             $this->_logger->debug("Callback | Error: Order $transaction_id invalid status $status");
-            return [[
+            return array(
+                array(
                 'status' => 'error',
-                'message' => 'Invalid Transaction Status'
-            ]];
+                'message' => 'Invalid Transaction Status',
+                ),
+            );
         }
 
         // Validate the transaction_id's value
@@ -186,10 +232,12 @@ class Callback implements CallbackInterface
         );
         if (!$order || empty($order) || !$order->getRealOrderId()) {
             $this->_logger->debug("Callback | Error: Order $transaction_id not found");
-            return [[
+            return array(
+                array(
                 'status' => 'error',
-                'message' => "Order not found for transaction '$transaction_id'"
-            ]];
+                'message' => "Order not found for transaction '$transaction_id'",
+                ),
+            );
         }
 
         // Rejected Order
@@ -203,18 +251,22 @@ class Callback implements CallbackInterface
             $order->addStatusHistoryComment($message, "canceled / rejected")
                 ->setIsCustomerNotified(false)->save();
             $this->_logger->debug("Callback | Error: Order $transaction_id rejected");
-            return [[
+            return array(
+                array(
                 'status' => 'rejected',
-                'message' => $message
-            ]];
+                'message' => $message,
+                ),
+            );
         }
 
         if ($order->getStatus() !== Order::STATE_PENDING_PAYMENT) {
             $this->_logger->debug("Callback | Error: Order $transaction_id already updated");
-            return [[
+            return array(
+                array(
                 'status' => __('error'),
-                'message' => __('Order already Updated.')
-            ]];
+                'message' => __('Order already Updated.'),
+                ),
+            );
         }
 
         $merchantId = $this->getMerchantId();
@@ -222,14 +274,16 @@ class Callback implements CallbackInterface
         $orderAmount = (double) $order->getBaseGrandTotal();
         $orderCurrency = $order->getBaseCurrencyCode();
         $orderTimestamp = strtotime($order->getCreatedAt());
-        $orderHashData = $orderId . $status . $orderTimestamp . $merchantId . $orderAmount . $orderCurrency;
+        $orderHashData = $orderId.$status.$orderTimestamp.$merchantId.$orderAmount.$orderCurrency;
         $orderSecureHash = base64_encode(hash('sha512', $orderHashData, true));
         if ($secure_hash != $orderSecureHash) {
-            $this->_logger->debug('Callback | Error: Hash does not match for order ' . $orderId);
-            return json_encode(array(
-                'status' => __('error'),
-                'message' => __('Invalid Transaction Params.')
-            ));
+            $this->_logger->debug('Callback | Error: Hash does not match for order '.$orderId);
+            return json_encode(
+                array(
+                    'status' => __('error'),
+                    'message' => __('Invalid Transaction Params.'),
+                )
+            );
         }
 
         if ($order->canInvoice()) {
@@ -246,7 +300,9 @@ class Callback implements CallbackInterface
                 $this->_orderSender->send($order);
                 $order->addStatusToHistory(Order::STATE_PROCESSING, null, true);
             }
+
             $order = $order->save();
+
         }
         $payment = $order->getPayment();
         $payment->setLastTransId($transaction_id);
@@ -256,28 +312,34 @@ class Callback implements CallbackInterface
         $payment->setAdditionalInformation([
             \Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array(
                 'StatusId' => $status,
-                'Timestamp' => $orderTimestamp
+                'Timestamp' => $orderTimestamp,
             )
         ]);
         $transaction = $payment->addTransaction(
-            \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true
+            \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE,
+            null,
+            true
         );
         $transaction->setIsClosed(true);
 
         $formatedPrice = $order->getBaseCurrency()->formatTxt($order->getGrandTotal());
         $message = __('The cuptured amount is %1.', $formatedPrice);
         $payment->addTransactionCommentsToOrder(
-            $transaction, $message
+            $transaction,
+            $message
         );
         $payment->save();
         $order->save();
 
         $this->_logger->debug("Callback | Success: Order $orderId Accepted");
-        return [[
-            'status' => 'success',
-            'message' => 'Transaction made successfully.'
-        ]];
-    }
+        return array(
+            array(
+                'status' => 'success',
+                'message' => 'Transaction made successfully.',
+            ),
+        );
+    }//end response()
+
 
     /**
      * Checks if the order status changed
@@ -295,31 +357,41 @@ class Callback implements CallbackInterface
         );
         if (!$order || empty($order) || empty($order->getState())) {
             $this->_logger->debug("Status Check | Error: Invalid Order Id $order_id");
-            return [[
-                'status' => 'error',
-                'message' => 'Invalid order.'
-            ]];
+            return array(
+                array(
+                    'status' => 'error',
+                    'message' => 'Invalid order.',
+                ),
+            );
         }
 
         switch ($order->getState()) {
-            case Order::STATE_CANCELED:
-                return [[
+        case Order::STATE_CANCELED:
+            return array(
+                array(
                     'status' => 'changed',
-                    'message' => 'Rejected'
-                ]];
-            case Order::STATE_PROCESSING:
-                return [[
+                    'message' => 'Rejected',
+                ),
+            );
+        case Order::STATE_PROCESSING:
+            return array(
+                array(
                     'status' => 'changed',
-                    'message' => 'Accepted'
-                ]];
-            case Order::STATE_PENDING_PAYMENT:
-            default:
-                return [[
-                    'status' => 'not-changed',
-                    'message' => 'Pending'
-                ]];
+                    'message' => 'Accepted',
+                ),
+            );
+        case Order::STATE_PENDING_PAYMENT:
+        default:
+            return array(
+                array(
+                'status' => 'not-changed',
+                'message' => 'Pending',
+                ),
+            );
         }
-    }
+
+    }//end status_check()
+
 
     /**
      * Check if the status of the order is valid
@@ -328,13 +400,18 @@ class Callback implements CallbackInterface
      *
      * @return boolean
      */
-    protected function is_valid_status($status)
+    protected function isValidStatus($status)
     {
         return in_array(
             $status,
-            array(self::PAYMENT_STATUS_REJECTED, self::PAYMENT_STATUS_APPROVED)
+            array(
+                self::PAYMENT_STATUS_REJECTED,
+                self::PAYMENT_STATUS_APPROVED,
+            )
         );
-    }
+
+    }//end isValidStatus()
+
 
     /**
      * Get the merchant id from the module's backend configuration
@@ -343,10 +420,14 @@ class Callback implements CallbackInterface
      */
     public function getMerchantId()
     {
-        $merchant_id = $this->_scopeConfig->getValue(
-            'payment/skash/merchant_id', \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+        $merchantId = $this->_scopeConfig->getValue(
+            'payment/skash/merchant_id',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         );
-        return $this->_encryptor->decrypt($merchant_id);
-    }
 
-}
+        return $this->_encryptor->decrypt($merchantId);
+
+    }//end getMerchantId()
+
+
+}//end class

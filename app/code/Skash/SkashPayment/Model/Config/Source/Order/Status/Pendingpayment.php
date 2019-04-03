@@ -1,8 +1,10 @@
 <?php
 
 /**
- * Copyright © 2015 Magento. All rights reserved.
- * See COPYING.txt for license details.
+ * Order Status Pending Payment
+ *
+ * @author  Michel Abdo <michel.f.abdo@gmail.com>
+ * @license https://framework.zend.com/license  New BSD License
  */
 
 namespace Skash\SkashPayment\Model\Config\Source\Order\Status;
@@ -16,9 +18,13 @@ use Magento\Sales\Model\Config\Source\Order\Status;
 class Pendingpayment extends Status
 {
 
+
     /**
+     * Order statuses
+     *
      * @var string[]
      */
-    protected $_stateStatuses = [Order::STATE_PENDING_PAYMENT];
+    protected $_stateStatuses = array(Order::STATE_PENDING_PAYMENT);
 
-}
+
+}//end class
