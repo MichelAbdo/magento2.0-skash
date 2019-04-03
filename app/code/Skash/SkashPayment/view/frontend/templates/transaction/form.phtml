@@ -1,15 +1,19 @@
 <?php
+
 /**
- * Copyright © 2013-2017 Magento, Inc. All rights reserved.
- * See COPYING.txt for license details.
+ * Skash QR Transaction
+ *
+ * @author  Michel Abdo <michel.f.abdo@gmail.com>
+ * @license https://framework.zend.com/license  New BSD License
  */
+
 $orderId = $block->getOrderID();
 $isMobile = $block->isMobile();
 if ($isMobile) {
     ?>
-    <div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_check?order_id=' . $orderId; ?>">
+    <div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl().'status_check?order_id='.$orderId; ?>">
         <h2 class='skash-title'>
-            <?php echo __("Your order has been placed!"); ?>
+            <?php echo __('Your order has been placed!'); ?>
         </h2>
         <div class='skash-notifications'></div>
         <div class='skash-buttons'>
@@ -37,9 +41,9 @@ if ($isMobile) {
                     <div><?php echo __('An error occured while creating the sKash transaction!'); ?></div>
                     <div>
                         <?php
-                        echo isset($qrResponse['error']) ? 'Error: ' . $qrResponse['error'] : '';
-                        echo isset($qrResponse['Flag']) && $qrResponse['Flag'] == $block->PAYMENT_STATUS_ERROR ? 'Error: PAYMENT_STATUS_ERROR. Flag: ' . $qrResponse['Flag'] : '';
-                        echo isset($qrResponse['Flag']) && $qrResponse['Flag'] == $block->PAYMENT_STATUS_INVALID_DATA ? 'Error: PAYMENT_STATUS_INVALID_DATA. Flag: ' . $qrResponse['Flag'] : '';
+                        echo isset($qrResponse['error']) ? 'Error: '.$qrResponse['error'] : '';
+                        echo isset($qrResponse['Flag']) && $qrResponse['Flag'] == $block->PAYMENT_STATUS_ERROR ? 'Error: PAYMENT_STATUS_ERROR. Flag: '.$qrResponse['Flag'] : '';
+                        echo isset($qrResponse['Flag']) && $qrResponse['Flag'] == $block->PAYMENT_STATUS_INVALID_DATA ? 'Error: PAYMENT_STATUS_INVALID_DATA. Flag: '.$qrResponse['Flag'] : '';
                         echo (isset($qrResponse['Flag']) && $qrResponse['Flag'] == 2) && (empty($qrResponse['TranID']) || empty($qrResponse['PictureURL'])) ? 'Invalid Data Received.' : '';
                         ?>
                     </div>
@@ -59,9 +63,9 @@ if ($isMobile) {
             $tranID     = $qrResponse['TranID'];
             $block->setSkashTransactionReference($tranID);
             ?>
-                <div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl() . 'status_check?order_id=' . $orderId; ?>">
+                <div id='skash_qr_response' data-status-check="<?php echo $block->getStatusChangeUrl().'status_check?order_id='.$orderId; ?>">
                     <h2 class='skash-title'>
-                        <?php echo __("Your order has been placed!"); ?>
+                        <?php echo __('Your order has been placed!'); ?>
                     </h2>
                     <div class='skash-notifications'></div>
                     <h3>

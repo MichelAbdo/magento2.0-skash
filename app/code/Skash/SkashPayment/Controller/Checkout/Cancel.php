@@ -119,7 +119,7 @@ class Cancel extends \Magento\Framework\App\Action\Action
                 switch ($result['Flag']) {
                 case 1:
                         $this->_logger->debug("Cancel Payment - N/A | Transaction was approved before cancellation for order: $orderId, ".$result['ReturnText']);
-                        $this->messageManager->addNotice(__("The sKash Transaction was approved."));
+                        $this->messageManager->addNotice(__('The sKash Transaction was approved.'));
                     break;
                 case 3:
                         $this->_logger->debug("Cancel Payment - Error | Transaction Timed-out for order: $orderId, ".$result['ReturnText']);
@@ -132,14 +132,14 @@ class Cancel extends \Magento\Framework\App\Action\Action
                             $order->getEntityId()
                         );
                         $order->addStatusHistoryComment(
-                            __("sKash Transaction Canceled"),
+                            __('sKash Transaction Canceled.'),
                             Order::STATE_CANCELED
                         )->setIsCustomerNotified(false)
                             ->setSkashTransactionReference($result['ReferenceNo'])
                             ->save();
 
                         $this->_logger->debug("Cancel Payment - Success | Order $orderId canceled ");
-                        $this->messageManager->addNotice(__("Order $orderId canceled."));
+                        $this->messageManager->addNotice(__('Order %1 canceled.', $orderId));
                     break;
                 case -1:
                         $this->_logger->debug("Cancel - Error | Transaction unsuccessful for order: $orderId, ".$result['ReturnText']);

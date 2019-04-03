@@ -97,12 +97,12 @@ class Transaction extends \Magento\Framework\App\Action\Action
                             $orderStateMsg = 'updated';
                             break;
                     }
-                    $this->messageManager->addNotice(__("Order already $orderStateMsg. Check your order history."));
+                    $this->messageManager->addNotice(__('Order already %1. Check your order history.', $orderStateMsg));
                     return $this->resultRedirectFactory->create()->setPath('/');
                 }
 
                 $order->addStatusHistoryComment(
-                    __("Getting sKash QR."), $order->getStatus()
+                    __('Getting sKash QR.'), $order->getStatus()
                 )->setIsCustomerNotified(false)->save();
             }
         }
