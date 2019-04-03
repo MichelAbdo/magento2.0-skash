@@ -240,7 +240,6 @@ class Skash extends AbstractMethod
             'MerchantID' => $merchantId,
             'AdditionalInfo' => $additionalInfo,
         );
-        $this->_logger->debug("QR Transaction | Fields: ".json_encode($fields));
 
         return $fields;
 
@@ -279,7 +278,6 @@ class Skash extends AbstractMethod
             'currentURL' => $currentURL,
             'browsertype' => $browserType,
         );
-        $this->_logger->debug("Mobile Transaction | Deeplink: ".$appURL.json_encode($fields));
 
         return $appURL.json_encode($fields);
 
@@ -349,8 +347,6 @@ class Skash extends AbstractMethod
             'ReturnText' => $result->ReturnText,
         );
 
-        $this->_logger->debug("QR Transaction | Response: ".json_encode($result));
-
         return $result;
 
     }//end getTransactionQR()
@@ -376,7 +372,6 @@ class Skash extends AbstractMethod
                 'SecureHash' => $secureHash,
             )
         );
-        $this->_logger->debug("Cancel QR Payment | Request Body: ".$dataString);
 
         $url = dirname($this->getQRTransactionUrl()).'/CancelQRPayment';
         $ch = curl_init($url);
@@ -399,8 +394,6 @@ class Skash extends AbstractMethod
             'ReferenceNo' => $result->ReferenceNo,
             'ReturnText' => $result->ReturnText,
         );
-
-        $this->_logger->debug("Cancel QR Payment | Response: ".json_encode($result));
 
         return $result;
 
@@ -504,7 +497,6 @@ class Skash extends AbstractMethod
     public function refund(\Magento\Payment\Model\InfoInterface $payment, $amount)
     {
         if (!$payment->getParentTransactionId()) {
-            $this->_logger->debug("Reverse Payment | Invalid transaction ID.");
             throw new \Magento\Framework\Exception\LocalizedException(__('Invalid transaction ID.'));
         }
 
@@ -520,7 +512,6 @@ class Skash extends AbstractMethod
                 'SecureHash' => $secureHash,
             )
         );
-        $this->_logger->debug("Reverse Payment | Request Body: ".$dataString);
 
         $url = dirname($this->getQRTransactionUrl()).'/ReverseQRPayment';
         $ch = curl_init($url);
@@ -533,7 +524,6 @@ class Skash extends AbstractMethod
         curl_close($ch);
 
         if (!$result || !json_decode($result)) {
-            $this->_logger->debug("Reverse Payment | Error while establishing connection for transaction: ".$transactionId);
             throw new \Magento\Framework\Exception\LocalizedException(__('Error while establishing connection.'));
         }
 
@@ -545,26 +535,19 @@ class Skash extends AbstractMethod
             'ReturnText' => $result->ReturnText,
         );
 
-        $this->_logger->debug("Reverse Payment | Response: ".json_encode($result));
-
         switch ($result['Flag']) {
         case 1:
-            $this->_logger->debug("Reverse Payment - Success | Transaction $transactionId reversed successfully, ".$result['ReturnText']);
             $this->messageManager->addNotice(__('The sKash Transaction %1 was reversed successfully.', $transactionId));
             break;
         case 3:
-            $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transactionId Timed-out, ".$result['ReturnText']);
             throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction %1 Timed-out.', $transactionId));
         case 7:
-            $this->_logger->debug("Reverse Payment - Success | Transaction $transactionId canceled.");
             $this->messageManager->addNotice(__('Transaction %1 canceled.', $transactionId));
             throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction %1 Timed-out.', $transactionId));
         case -1:
-            $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transactionId unsuccessful, ".$result['ReturnText']);
             throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction %1 unsuccessful.', $transactionId));
             break;
         case 10:
-            $this->_logger->debug("Reverse Payment - Error | Invalid data submission for Transaction $transactionId, ".$result['ReturnText']);
             throw new \Magento\Framework\Exception\LocalizedException(__('Invalid data submission for Transaction %1.', $transactionId));
         default:
             throw new \Magento\Framework\Exception\LocalizedException(__('Payment refunding error.'));

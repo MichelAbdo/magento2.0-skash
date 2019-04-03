@@ -118,11 +118,9 @@ class Cancel extends \Magento\Framework\App\Action\Action
 
                 switch ($result['Flag']) {
                 case 1:
-                        $this->_logger->debug("Cancel Payment - N/A | Transaction was approved before cancellation for order: $orderId, ".$result['ReturnText']);
                         $this->messageManager->addNotice(__('The sKash Transaction was approved.'));
                     break;
                 case 3:
-                        $this->_logger->debug("Cancel Payment - Error | Transaction Timed-out for order: $orderId, ".$result['ReturnText']);
                     break;
                 case 7:
                         $order->setState(Order::STATE_CANCELED);
@@ -138,14 +136,11 @@ class Cancel extends \Magento\Framework\App\Action\Action
                             ->setSkashTransactionReference($result['ReferenceNo'])
                             ->save();
 
-                        $this->_logger->debug("Cancel Payment - Success | Order $orderId canceled ");
                         $this->messageManager->addNotice(__('Order %1 canceled.', $orderId));
                     break;
                 case -1:
-                        $this->_logger->debug("Cancel - Error | Transaction unsuccessful for order: $orderId, ".$result['ReturnText']);
                     break;
                 case 10:
-                        $this->_logger->debug("Cancel - Error | Invalid data submission for order: $orderId, ".$result['ReturnText']);
                     break;
                 }//end switch
             }//end if

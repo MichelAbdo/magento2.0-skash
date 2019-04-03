@@ -187,7 +187,6 @@ class Response extends \Magento\Framework\App\Action\Action
     public function execute()
     {
         $postData = $this->getRequest()->getPostValue();
-        $this->_logger->debug("Callback | Response post data: ".json_encode($postData));
         $transactionId = isset($postData['transaction_id']) ? $postData['transaction_id'] : '';
         $status = isset($postData['status']) ? $postData['status'] : '';
         $timestamp = isset($postData['timestamp']) ? $postData['timestamp'] : '';
@@ -201,7 +200,6 @@ class Response extends \Magento\Framework\App\Action\Action
         if (empty($transactionId) || empty($timestamp) || empty($merchantId)
             || empty($amount) || empty($currency) || empty($secureHash)
         ) {
-            $this->_logger->debug("Callback | Error: Order Invalid / empty params");
             return $result->setData(
                 array(
                     'status' => 'error',
@@ -212,7 +210,6 @@ class Response extends \Magento\Framework\App\Action\Action
 
         // Validate the status' value
         if (!$this->isValidStatus($status)) {
-            $this->_logger->debug("Callback | Error: Order $transactionId invalid status $status");
             return $result->setData(array(
                 'status' => 'error',
                 'message' => 'Invalid Transaction Status',
@@ -224,7 +221,6 @@ class Response extends \Magento\Framework\App\Action\Action
             $transactionId
         );
         if (!$order || empty($order) || !$order->getRealOrderId()) {
-            $this->_logger->debug("Callback | Error: Order $transactionId not found");
             return $result->setData(
                 array(
                     'status' => 'error',
@@ -243,7 +239,6 @@ class Response extends \Magento\Framework\App\Action\Action
             );
             $order->addStatusHistoryComment($message, "canceled / rejected")
                 ->setIsCustomerNotified(false)->save();
-            $this->_logger->debug("Callback | Error: Order $transactionId rejected");
             return $result->setData(
                 array(
                     'status' => 'rejected',
@@ -253,7 +248,6 @@ class Response extends \Magento\Framework\App\Action\Action
         }
 
         if ($order->getStatus() !== Order::STATE_PENDING_PAYMENT) {
-            $this->_logger->debug("Callback | Error: Order $transactionId already updated");
             return $result->setData(
                 array(
                     'status' => __('error'),
@@ -271,11 +265,7 @@ class Response extends \Magento\Framework\App\Action\Action
         $orderHashData = $orderId.$status.$orderTimestamp.$merchantId.$orderAmount.$orderCurrency.$certificate;
         $orderSecureHash = base64_encode(hash('sha512', $orderHashData, true));
 
-        $this->_logger->debug("Callback | DB Data: ".json_encode([$orderId, $status, $orderTimestamp, $merchantId, $orderAmount, $orderCurrency]));
-        $this->_logger->debug("Callback | DB Hash: ".$orderSecureHash);
-
         if ($secureHash != $orderSecureHash) {
-            $this->_logger->debug('Callback | Error: Hash does not match for order '.$orderId);
             return $result->setData(
                 array(
                     'status' => __('error'),
@@ -324,8 +314,6 @@ class Response extends \Magento\Framework\App\Action\Action
         $payment->setParentTransactionId(null);
         $payment->save();
         $order->save();
-
-        $this->_logger->debug("Callback | Success: Order $orderId Accepted");
 
         return $result->setData(
             array(
