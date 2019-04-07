@@ -263,6 +263,7 @@ class Response extends \Magento\Framework\App\Action\Action
         }
 
         $merchantId = $this->getMerchantId();
+        $skashTransactionId = $order->getSkashTransactionReference();
         $certificate = $this->getCertificate();
         $orderId = $order->getRealOrderId();
         $orderAmount = (double) $order->getBaseGrandTotal();
@@ -286,11 +287,12 @@ class Response extends \Magento\Framework\App\Action\Action
 
         if ($order->canInvoice()) {
             $invoice = $this->_invoiceService->prepareInvoice($order);
+            $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_ONLINE);
             $invoice->register();
+            $invoice->setTransactionId($skashTransactionId);
+            $invoice->pay();
             $invoice->save();
-            $transactionSave = $this->_transaction->addObject($invoice)
-                ->addObject($invoice->getOrder());
-            $transactionSave->save();
+
             $order->setState(Order::STATE_PROCESSING);
             $order->setStatus(Order::STATE_PROCESSING);
             if ($invoice && !$order->getEmailSent()) {
@@ -299,29 +301,33 @@ class Response extends \Magento\Framework\App\Action\Action
             }
 
             $order = $order->save();
+
         }//end if
 
         $payment = $order->getPayment();
-        $payment->setLastTransId($orderId);
-        $payment->setTransactionId($orderId);
+        $payment->setLastTransId($skashTransactionId);
+        $payment->setTransactionId($skashTransactionId);
+        $payment->setParentTransactionId($skashTransactionId);
+        $payment->setIsTransactionClosed(1);
+        $payment->setAdditionalInformation([
+            \Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array(
+                'StatusId' => $status,
+                'Timestamp' => $orderTimestamp,
+            )
+        ]);
+        $transaction = $payment->addTransaction(
+            \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE,
+            null,
+            true
+        );
+        $transaction->setIsClosed(true);
+
         $formatedPrice = $order->getBaseCurrency()->formatTxt($order->getGrandTotal());
         $message = __('The cuptured amount is %1.', $formatedPrice);
-        $payment->setAdditionalInformation(
-            array(
-                \Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array(
-                    'StatusId' => $status,
-                    'Timestamp' => $orderTimestamp,
-                ),
-            )
-        );
-        $transaction = $payment->addTransaction(
-            \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE
-        );
         $payment->addTransactionCommentsToOrder(
             $transaction,
             $message
         );
-        $payment->setParentTransactionId(null);
         $payment->save();
         $order->save();
 
