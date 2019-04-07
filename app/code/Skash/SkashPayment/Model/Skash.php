@@ -534,7 +534,7 @@ class Skash extends AbstractMethod
 
         if (!$result || !json_decode($result)) {
             $this->_logger->debug("Reverse Payment | Error while establishing connection for transaction: ".$transactionId);
-            throw new \Magento\Framework\Exception\LocalizedException(__('Error while establishing connection.'));
+            // throw new \Magento\Framework\Exception\LocalizedException(__('Error while establishing connection.'));
         }
 
         $result = json_decode($result);
@@ -554,20 +554,20 @@ class Skash extends AbstractMethod
             break;
         case 3:
             $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transactionId Timed-out, ".$result['ReturnText']);
-            throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction %1 Timed-out.', $transactionId));
+            // throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction %1 Timed-out.', $transactionId));
         case 7:
             $this->_logger->debug("Reverse Payment - Success | Transaction $transactionId canceled.");
             $this->messageManager->addNotice(__('Transaction %1 canceled.', $transactionId));
-            throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction %1 Timed-out.', $transactionId));
+            // throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction %1 Timed-out.', $transactionId));
         case -1:
             $this->_logger->debug("Reverse Payment - Error | Reverse Transaction $transactionId unsuccessful, ".$result['ReturnText']);
-            throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction %1 unsuccessful.', $transactionId));
+            // throw new \Magento\Framework\Exception\LocalizedException(__('Reverse Transaction %1 unsuccessful.', $transactionId));
             break;
         case 10:
             $this->_logger->debug("Reverse Payment - Error | Invalid data submission for Transaction $transactionId, ".$result['ReturnText']);
-            throw new \Magento\Framework\Exception\LocalizedException(__('Invalid data submission for Transaction %1.', $transactionId));
+            // throw new \Magento\Framework\Exception\LocalizedException(__('Invalid data submission for Transaction %1.', $transactionId));
         default:
-            throw new \Magento\Framework\Exception\LocalizedException(__('Payment refunding error.'));
+            // throw new \Magento\Framework\Exception\LocalizedException(__('Payment refunding error.'));
         }//end switch
 
         return $this;
