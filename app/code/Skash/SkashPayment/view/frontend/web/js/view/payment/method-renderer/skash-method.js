@@ -1,6 +1,8 @@
 /**
- * Copyright © 2015 Magento. All rights reserved.
- * See COPYING.txt for license details.
+ * Skash JS Method Renderer
+ *
+ * @author  Michel Abdo <michel.f.abdo@gmail.com>
+ * @license https://framework.zend.com/license  New BSD License
  */
 /*browser:true*/
 /*global define*/

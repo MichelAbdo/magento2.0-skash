@@ -136,7 +136,7 @@ class Form extends \Magento\Payment\Block\Form
      */
     protected function _getOrder()
     {
-        if ($this->_order === false) {
+        if (!$this->_order) {
             $incrementId = $this->_getCheckout()->getLastRealOrderId();
             $this->_order = $this->_orderFactory->create()->loadByIncrementId($incrementId);
         }

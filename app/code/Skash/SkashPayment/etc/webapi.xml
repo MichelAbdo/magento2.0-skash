@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 <!--
 /**
- * @copyright Copyright (c) 2015 X.commerce, Inc. (http://www.magentocommerce.com)
+ * Skash WebAPI
+ *
+ * @author  Michel Abdo <michel.f.abdo@gmail.com>
+ * @license https://framework.zend.com/license  New BSD License
  */
 -->
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
