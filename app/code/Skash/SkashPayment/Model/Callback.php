@@ -189,156 +189,156 @@ class Callback implements CallbackInterface
      *
      * @return \Magento\Framework\Controller\Result\Json
      */
-    public function response(
-        $transaction_id,
-        $status,
-        $timestamp,
-        $merchant_id,
-        $amount,
-        $currency,
-        $secure_hash
-    ) {
-        $this->_logger->debug("Callback | Inside Response Action");
-        $this->_logger->debug("Callback | tansaction id".$transaction_id);
-        $this->_logger->debug("Callback | status".$status);
-
-        if (empty($transaction_id) || empty($status) || empty($timestamp)
-            || empty($merchant_id) || empty($amount) || empty($currency)
-            || empty($secure_hash)
-        ) {
-            $this->_logger->debug("Callback | Error: Order $transaction_id Invalid / empty params");
-            return array(
-                array(
-                    'status' => 'error',
-                    'message' => 'Invalid / Empty Transaction Params.',
-                ),
-            );
-        }
-
-        // Validate the status' value
-        if (!$this->isValidStatus($status)) {
-            $this->_logger->debug("Callback | Error: Order $transaction_id invalid status $status");
-            return array(
-                array(
-                'status' => 'error',
-                'message' => 'Invalid Transaction Status',
-                ),
-            );
-        }
-
-        // Validate the transaction_id's value
-        $order = $this->_orderFactory->create()->loadByIncrementId(
-            $transaction_id
-        );
-        if (!$order || empty($order) || !$order->getRealOrderId()) {
-            $this->_logger->debug("Callback | Error: Order $transaction_id not found");
-            return array(
-                array(
-                'status' => 'error',
-                'message' => "Order not found for transaction '$transaction_id'",
-                ),
-            );
-        }
-
-        // Rejected Order
-        if ($status == self::PAYMENT_STATUS_REJECTED) {
-            $order->setState(Order::STATE_CANCELED);
-            $order->setStatus(Order::STATE_CANCELED);
-            $message = __('Skash Transaction Rejected.');
-            $this->_orderManagement->cancel(
-                $order->getEntityId()
-            );
-            $order->addStatusHistoryComment($message, "canceled / rejected")
-                ->setIsCustomerNotified(false)->save();
-            $this->_logger->debug("Callback | Error: Order $transaction_id rejected");
-            return array(
-                array(
-                'status' => 'rejected',
-                'message' => $message,
-                ),
-            );
-        }
-
-        if ($order->getStatus() !== Order::STATE_PENDING_PAYMENT) {
-            $this->_logger->debug("Callback | Error: Order $transaction_id already updated");
-            return array(
-                array(
-                'status' => __('error'),
-                'message' => __('Order already Updated.'),
-                ),
-            );
-        }
-
-        $merchantId = $this->getMerchantId();
-        $orderId = $order->getRealOrderId();
-        $orderAmount = (double) $order->getBaseGrandTotal();
-        $orderCurrency = $order->getBaseCurrencyCode();
-        $orderTimestamp = strtotime($order->getCreatedAt());
-        $orderHashData = $orderId.$status.$orderTimestamp.$merchantId.$orderAmount.$orderCurrency;
-        $orderSecureHash = base64_encode(hash('sha512', $orderHashData, true));
-        if ($secure_hash != $orderSecureHash) {
-            $this->_logger->debug('Callback | Error: Hash does not match for order '.$orderId);
-            return json_encode(
-                array(
-                    'status' => __('error'),
-                    'message' => __('Invalid Transaction Params.'),
-                )
-            );
-        }
-
-        if ($order->canInvoice()) {
-            $invoice = $this->_invoiceService->prepareInvoice($order);
-            $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_ONLINE);
-            $invoice->register();
-            $invoice->setTransactionId($transaction_id);
-            $invoice->pay();
-            $invoice->save();
-
-            $order->setState(Order::STATE_PROCESSING);
-            $order->setStatus(Order::STATE_PROCESSING);
-            if ($invoice && !$order->getEmailSent()) {
-                $this->_orderSender->send($order);
-                $order->addStatusToHistory(Order::STATE_PROCESSING, null, true);
-            }
-
-            $order = $order->save();
-
-        }
-        $payment = $order->getPayment();
-        $payment->setLastTransId($transaction_id);
-        $payment->setTransactionId($transaction_id);
-        $payment->setParentTransactionId($transaction_id);
-        $payment->setIsTransactionClosed(1);
-        $payment->setAdditionalInformation([
-            \Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array(
-                'StatusId' => $status,
-                'Timestamp' => $orderTimestamp,
-            )
-        ]);
-        $transaction = $payment->addTransaction(
-            \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE,
-            null,
-            true
-        );
-        $transaction->setIsClosed(true);
-
-        $formatedPrice = $order->getBaseCurrency()->formatTxt($order->getGrandTotal());
-        $message = __('The cuptured amount is %1.', $formatedPrice);
-        $payment->addTransactionCommentsToOrder(
-            $transaction,
-            $message
-        );
-        $payment->save();
-        $order->save();
-
-        $this->_logger->debug("Callback | Success: Order $orderId Accepted");
-        return array(
-            array(
-                'status' => 'success',
-                'message' => 'Transaction made successfully.',
-            ),
-        );
-    }//end response()
+//    public function response(
+//        $transaction_id,
+//        $status,
+//        $timestamp,
+//        $merchant_id,
+//        $amount,
+//        $currency,
+//        $secure_hash
+//    ) {
+//        $this->_logger->debug("Callback | Inside Response Action");
+//        $this->_logger->debug("Callback | tansaction id".$transaction_id);
+//        $this->_logger->debug("Callback | status".$status);
+//
+//        if (empty($transaction_id) || empty($status) || empty($timestamp)
+//            || empty($merchant_id) || empty($amount) || empty($currency)
+//            || empty($secure_hash)
+//        ) {
+//            $this->_logger->debug("Callback | Error: Order $transaction_id Invalid / empty params");
+//            return array(
+//                array(
+//                    'status' => 'error',
+//                    'message' => 'Invalid / Empty Transaction Params.',
+//                ),
+//            );
+//        }
+//
+//        // Validate the status' value
+//        if (!$this->isValidStatus($status)) {
+//            $this->_logger->debug("Callback | Error: Order $transaction_id invalid status $status");
+//            return array(
+//                array(
+//                'status' => 'error',
+//                'message' => 'Invalid Transaction Status',
+//                ),
+//            );
+//        }
+//
+//        // Validate the transaction_id's value
+//        $order = $this->_orderFactory->create()->loadByIncrementId(
+//            $transaction_id
+//        );
+//        if (!$order || empty($order) || !$order->getRealOrderId()) {
+//            $this->_logger->debug("Callback | Error: Order $transaction_id not found");
+//            return array(
+//                array(
+//                'status' => 'error',
+//                'message' => "Order not found for transaction '$transaction_id'",
+//                ),
+//            );
+//        }
+//
+//        // Rejected Order
+//        if ($status == self::PAYMENT_STATUS_REJECTED) {
+//            $order->setState(Order::STATE_CANCELED);
+//            $order->setStatus(Order::STATE_CANCELED);
+//            $message = __('Skash Transaction Rejected.');
+//            $this->_orderManagement->cancel(
+//                $order->getEntityId()
+//            );
+//            $order->addStatusHistoryComment($message, "canceled / rejected")
+//                ->setIsCustomerNotified(false)->save();
+//            $this->_logger->debug("Callback | Error: Order $transaction_id rejected");
+//            return array(
+//                array(
+//                'status' => 'rejected',
+//                'message' => $message,
+//                ),
+//            );
+//        }
+//
+//        if ($order->getStatus() !== Order::STATE_PENDING_PAYMENT) {
+//            $this->_logger->debug("Callback | Error: Order $transaction_id already updated");
+//            return array(
+//                array(
+//                'status' => __('error'),
+//                'message' => __('Order already Updated.'),
+//                ),
+//            );
+//        }
+//
+//        $merchantId = $this->getMerchantId();
+//        $orderId = $order->getRealOrderId();
+//        $orderAmount = (double) $order->getBaseGrandTotal();
+//        $orderCurrency = $order->getBaseCurrencyCode();
+//        $orderTimestamp = strtotime($order->getCreatedAt());
+//        $orderHashData = $orderId.$status.$orderTimestamp.$merchantId.$orderAmount.$orderCurrency;
+//        $orderSecureHash = base64_encode(hash('sha512', $orderHashData, true));
+//        if ($secure_hash != $orderSecureHash) {
+//            $this->_logger->debug('Callback | Error: Hash does not match for order '.$orderId);
+//            return json_encode(
+//                array(
+//                    'status' => __('error'),
+//                    'message' => __('Invalid Transaction Params.'),
+//                )
+//            );
+//        }
+//
+//        if ($order->canInvoice()) {
+//            $invoice = $this->_invoiceService->prepareInvoice($order);
+//            $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_ONLINE);
+//            $invoice->register();
+//            $invoice->setTransactionId($transaction_id);
+//            $invoice->pay();
+//            $invoice->save();
+//
+//            $order->setState(Order::STATE_PROCESSING);
+//            $order->setStatus(Order::STATE_PROCESSING);
+//            if ($invoice && !$order->getEmailSent()) {
+//                $this->_orderSender->send($order);
+//                $order->addStatusToHistory(Order::STATE_PROCESSING, null, true);
+//            }
+//
+//            $order = $order->save();
+//
+//        }
+//        $payment = $order->getPayment();
+//        $payment->setLastTransId($transaction_id);
+//        $payment->setTransactionId($transaction_id);
+//        $payment->setParentTransactionId($transaction_id);
+//        $payment->setIsTransactionClosed(1);
+//        $payment->setAdditionalInformation([
+//            \Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array(
+//                'StatusId' => $status,
+//                'Timestamp' => $orderTimestamp,
+//            )
+//        ]);
+//        $transaction = $payment->addTransaction(
+//            \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE,
+//            null,
+//            true
+//        );
+//        $transaction->setIsClosed(true);
+//
+//        $formatedPrice = $order->getBaseCurrency()->formatTxt($order->getGrandTotal());
+//        $message = __('The cuptured amount is %1.', $formatedPrice);
+//        $payment->addTransactionCommentsToOrder(
+//            $transaction,
+//            $message
+//        );
+//        $payment->save();
+//        $order->save();
+//
+//        $this->_logger->debug("Callback | Success: Order $orderId Accepted");
+//        return array(
+//            array(
+//                'status' => 'success',
+//                'message' => 'Transaction made successfully.',
+//            ),
+//        );
+//    }//end response()
 
 
     /**

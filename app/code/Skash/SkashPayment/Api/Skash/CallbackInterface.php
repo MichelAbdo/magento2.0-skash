@@ -31,15 +31,15 @@ interface CallbackInterface
      *
      * @return \Magento\Framework\Controller\Result\Json
      */
-    public function response(
-        $transaction_id,
-        $status,
-        $timestamp,
-        $merchant_id,
-        $amount,
-        $currency,
-        $secure_hash
-    );
+//    public function response(
+//        $transaction_id,
+//        $status,
+//        $timestamp,
+//        $merchant_id,
+//        $amount,
+//        $currency,
+//        $secure_hash
+//    );
 
 
     /**
